@@ -24,7 +24,7 @@
             width: 100%; height: 100%;
         }
         #ui-layer { z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; padding: 1rem; color: var(--text-color); }
-        #content-wrapper { width: 95%; max-width: 800px; position: relative; }
+        #content-wrapper { width: 95%; max-width: 800px; }
         #cursor-follower {
             position: fixed; width: 20px; height: 20px;
             border-radius: 50%; border: 2px solid var(--text-color);
@@ -39,8 +39,8 @@
             padding: 10px 20px; font-size: 1.1rem; transition: all 0.2s; margin: 5px;
             display: inline-flex; align-items: center; justify-content: center;
         }
-        .interactive-button:hover:not(:disabled), .interactive-submit:hover:not(:disabled), .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 20px var(--primary-color); transform: scale(1.05); }
-        .interactive-button:disabled, .interactive-submit:disabled, .mic-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .interactive-button:hover:not(:disabled), .interactive-submit:hover, .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 20px var(--primary-color); transform: scale(1.05); }
+        .interactive-button:disabled, .mic-button:disabled { opacity: 0.5; cursor: not-allowed; }
         .mic-button.is-listening {
             background: var(--primary-color); color: var(--background-color);
             animation: pulse 1.5s infinite;
@@ -55,26 +55,6 @@
         .color-swatch { width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s; }
         .color-swatch:hover { transform: scale(1.15); border-color: #fff; }
         #feedback-text { font-size: 1.5rem; font-style: italic; color: #64b5f6; text-shadow: 0 0 10px #64b5f6; }
-        #generated-image-container {
-            margin-top: 1.5rem;
-            width: 100%;
-            max-width: 400px;
-            aspect-ratio: 1 / 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #111;
-            border: 1px solid #444;
-        }
-        #generated-image {
-             display: none;
-             width: 100%;
-             height: 100%;
-             object-fit: cover;
-             animation: fadeIn 1s;
-        }
-        .loader-text { color: #888; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -88,6 +68,10 @@
         // ===================================================================================
         // UTILITIES & CUSTOM ERRORS
         // ===================================================================================
+        /**
+         * @description کلاس خطای سفارشی برای خطاهایی که نباید دوباره تلاش شوند.
+         * این خطاها معمولاً خطاهای سمت کاربر هستند (مانند کلید API نامعتبر).
+         */
         class NonRetryableError extends Error {
             constructor(message) {
                 super(message);
@@ -105,7 +89,6 @@
                 userProfile: { name: 'مسافر', choices: [] },
                 lastInput: null,
                 isAudioReady: false,
-                lastStageContext: null, // To restore stage after errors
             },
 
             init() {
@@ -116,137 +99,95 @@
             },
 
             async primeAudioAndStart() {
-                const startBtn = document.getElementById('start-btn');
-                if (startBtn) startBtn.disabled = true;
-
                 try {
-                    // 1. Initialize audio context for sound effects
                     if (!this.state.isAudioReady) {
-                        await UI.renderLoader("فعال‌سازی سیستم صوتی...");
                         await Tone.start();
                         Audio.init();
                         this.state.isAudioReady = true;
                     }
-
-                    // 2. Request microphone permission for voice input
-                    await UI.renderLoader("درخواست دسترسی به میکروفون...");
-                    try {
-                        // This line triggers the browser's permission prompt.
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        // We got permission. We can stop the tracks immediately as we don't need them yet.
-                        stream.getTracks().forEach(track => track.stop());
-                        Voice.permissionState = 'granted';
-                        console.log("Microphone permission granted at start.");
-                    } catch (err) {
-                        console.error("Microphone permission denied at start:", err);
-                        Voice.permissionState = 'denied';
-                        // The game continues, but the Voice module now knows the permission status.
-                    }
-
-                    // 3. Proceed to the next step
-                    this.transitionTo('name_prompt');
-
-                } catch (e) {
-                    console.error("Audio Context or Permission failed:", e);
-                    UI.renderError("خطا در فعال‌سازی سیستم. بازی بدون صدا و میکروفون ادامه می‌یابد.");
-                    setTimeout(() => this.transitionTo('name_prompt'), 3000);
+                    this.startExperience();
+                } catch(e) {
+                    console.error("Audio Context Failed To Start:", e);
+                    UI.renderError("خطا در زمینه صوتی. بازی بدون صدا ادامه می‌یابد.");
+                    setTimeout(() => this.startExperience(), 2000);
                 }
             },
-            
-            resetExperience() {
-                this.state.distortion = 0;
-                this.state.userProfile.choices = [];
-                this.state.lastInput = null;
-                this.state.lastStageContext = null;
-                Visuals.reset();
-                Audio.reset();
+
+            startExperience() {
                 this.transitionTo('loading_stage');
             },
 
             async transitionTo(flowState, context = {}) {
                 this.state.currentFlow = flowState;
                 switch (flowState) {
-                    case 'name_prompt':
-                        UI.renderNamePrompt();
-                        break;
                     case 'loading_stage':
                         await UI.renderLoader("طنین در حال یافتن توست...");
-                        if (this.state.distortion > 25) {
-                            this.transitionTo('the_end');
-                            return;
-                        }
                         const stageType = this.determineNextStage();
                         try {
                             const stageData = await AI.generateStage(stageType, this.state.userProfile);
                             if (!stageData) throw new Error("AI returned no data");
                             this.transitionTo('stage', { type: stageType, data: stageData });
                         } catch (e) {
-                            this.handleAIFailure(e, () => this.transitionTo('loading_stage', context));
+                            if (e instanceof NonRetryableError) {
+                                this.handleAIFatalError(e);
+                            } else {
+                                this.handleAITemporaryFailure(() => this.transitionTo('loading_stage', context));
+                            }
                         }
                         break;
                     case 'stage':
-                        this.state.lastStageContext = context; // Save context
                         UI.renderStage(context.type, context.data);
                         break;
                     case 'loading_feedback':
                         await UI.renderLoader("در حال تحلیل پاسخ تو...");
                         try {
-                            const feedbackData = await AI.generateFeedback(this.state.lastInput, this.state.userProfile.name);
+                            const feedbackData = await AI.generateFeedback(this.state.lastInput);
                             if (!feedbackData) throw new Error("AI returned no feedback");
                             this.transitionTo('feedback', { data: feedbackData });
                         } catch (e) {
-                            this.handleAIFailure(e, () => this.transitionTo('loading_feedback', context));
+                            if (e instanceof NonRetryableError) {
+                                this.handleAIFatalError(e);
+                            } else {
+                                this.handleAITemporaryFailure(() => this.transitionTo('loading_feedback', context));
+                            }
                         }
                         break;
                     case 'feedback':
-                        Audio.triggerFx();
                         await UI.renderFeedback(context.data.comment);
                         setTimeout(() => this.transitionTo('loading_stage'), 5000);
-                        break;
-                    case 'the_end':
-                        await UI.renderLoader("فروپاشی...");
-                        try {
-                           const finalData = await AI.generateFinalWords(this.state.userProfile);
-                           UI.renderEnding(finalData.comment);
-                           Audio.playEndingSound();
-                           Visuals.triggerCollapse();
-                        } catch(e) {
-                            this.handleAIFailure(e, () => this.transitionTo('the_end'));
-                        }
                         break;
                     default:
                         console.error("Unknown flow state:", flowState);
                         this.handleAIFatalError(new Error("Unknown flow state"));
                 }
             },
-
+            
             determineNextStage() {
-                const stages = ['question', 'color_game', 'number_game', 'word_association', 'moral_dilemma', 'riddle'];
-                if (this.state.userProfile.choices.length > 3) stages.push('dream_sequence');
+                const stages = ['question', 'color_game', 'number_game', 'word_association', 'moral_dilemma'];
                 if (this.state.distortion > 5) stages.push('rorschach_test');
                 if (this.state.distortion > 10 && this.state.userProfile.choices.length > 2) {
                     stages.push('memory_corruption');
                 }
-                if (this.state.distortion > 15 && Math.random() > 0.6) {
-                    stages.push('image_reflection');
-                }
                 return stages[Math.floor(Math.random() * stages.length)];
             },
-
-            handleAIFailure(error, retryFunction) {
-                if (error instanceof NonRetryableError) {
-                    this.handleAIFatalError(error);
-                } else {
-                    this.handleAITemporaryFailure(retryFunction);
-                }
-            },
-
+            
+            /**
+             * @description مدیریت خطاهای موقت (مثلاً شبکه). یک پیام به کاربر نشان داده و پس از تاخیر، عملیات را مجدداً امتحان می‌کند.
+             * @param {Function} retryFunction - تابعی که باید پس از تاخیر اجرا شود.
+             * @param {string} message - پیامی که به کاربر نمایش داده می‌شود.
+             */
             handleAITemporaryFailure(retryFunction, message = "ارتباط با طنین ناپایدار است. در حال تلاش برای اتصال مجدد...") {
                 console.warn("Temporary AI failure. Retrying in 7 seconds.");
                 UI.renderLoader(message);
-                setTimeout(() => retryFunction(), 7000);
+                setTimeout(() => {
+                    retryFunction();
+                }, 7000); // تاخیر ۷ ثانیه‌ای برای بازیابی
             },
 
+            /**
+             * @description مدیریت خطاهای دائمی (غیرقابل بازیابی). یک پیام نهایی به کاربر نمایش داده و جریان بازی را متوقف می‌کند.
+             * @param {Error} error - شیء خطا.
+             */
             handleAIFatalError(error) {
                 console.error("Entity Communication Failed and will not be retried:", error);
                 let userMessage = "ارتباط با طنین به طور کامل قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.";
@@ -254,11 +195,6 @@
                     userMessage = `یک خطای غیرقابل بازیابی رخ داد: ${error.message}. لطفاً صفحه را رفرش کنید.`;
                 }
                 UI.renderError(userMessage);
-            },
-            
-            setUserName(name) {
-                this.state.userProfile.name = name.trim() || 'مسافر';
-                this.transitionTo('loading_stage');
             },
 
             processUserInput(inputData) {
@@ -270,7 +206,7 @@
                 this.transitionTo('loading_feedback');
             }
         };
-
+        
         // ===================================================================================
         // UI MODULE: The Visual Interface
         // ===================================================================================
@@ -281,7 +217,7 @@
                     window.addEventListener('mousemove', e => {
                         cursor.style.opacity = '1';
                         window.requestAnimationFrame(() => {
-                            cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+                           cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
                         });
                     });
                     document.body.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; });
@@ -298,50 +234,22 @@
                     }, 500);
                 });
             },
-
+            
             renderIntro() {
                this._setContent(`
-                    <h1 class="text-6xl font-black" style="text-shadow: 0 0 15px var(--primary-color);">خلسه</h1>
-                    <p class="mt-4 text-gray-400">یک هم‌صحبت، در انتظار توست.</p>
+                    <h1 class="text-6xl font-black">خلسه</h1>
+                    <p class="mt-4 text-gray-500">یک هم‌صحبت، در انتظار توست.</p>
                     <button id="start-btn" class="interactive-button mt-8">آغاز کن</button>
                 `).then(() => {
                     document.getElementById('start-btn').onclick = () => Engine.primeAudioAndStart();
                 });
             },
-            
-            renderNamePrompt() {
-                this._setContent(`
-                    <p class="text-2xl md:text-3xl mb-8">طنین، تو را چه بنامد؟</p>
-                    <div class="flex flex-col items-center gap-4">
-                        <input type="text" class="interactive-input" id="name-input" autocomplete="off" placeholder="نام یا لقب..." autofocus>
-                        <button class="interactive-submit mt-4" id="submit-name-btn">ادامه</button>
-                    </div>
-                `).then(() => {
-                    const input = document.getElementById('name-input');
-                    const submitBtn = document.getElementById('submit-name-btn');
-                    const action = () => Engine.setUserName(input.value);
-                    submitBtn.onclick = action;
-                    input.onkeydown = e => { if (e.key === 'Enter') action(); };
-                });
-            },
-            
-            renderEnding(finalWords) {
-                this._setContent(`
-                    <p class="text-2xl md:text-3xl mb-8">${finalWords}</p>
-                    <button id="restart-btn" class="interactive-button mt-8">آغازی دوباره</button>
-                `).then(() => {
-                    document.getElementById('restart-btn').onclick = () => Engine.resetExperience();
-                });
-            },
-
-            renderLoader(text) { return this._setContent(`<p class="text-2xl text-gray-400 animate-pulse">${text}</p>`); },
+            renderLoader(text) { return this._setContent(`<p class="text-2xl text-gray-400">${text}</p>`); },
             renderError(msg) { return this._setContent(`<p class="text-2xl text-red-500">${msg}</p>`); },
             renderFeedback(comment) { return this._setContent(`<p id="feedback-text">"${comment}"</p>`); },
-
             renderStage(type, data) {
                 let html = '';
                 let hasTextInput = false;
-                let isImageStage = false;
                 switch(type) {
                     case 'question':
                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div data-stage-type="${type}">${data.choices.map(c => `<button class="interactive-button" data-collapse="${c.collapse}">${c.text}</button>`).join('')}</div>`;
@@ -349,40 +257,27 @@
                     case 'color_game':
                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div class="color-palette" data-stage-type="${type}">${data.colors.map(c => `<div class="color-swatch" style="background-color: ${c.hex};" data-collapse="${c.collapse}" data-meaning="${c.meaning}"></div>`).join('')}</div>`;
                         break;
-                    case 'image_reflection':
-                        isImageStage = true;
-                        break;
                     case 'rorschach_test':
                         Visuals.drawRorschach();
                         hasTextInput = true;
                         break;
-                    default: // Covers number_game, word_association, moral_dilemma, riddle, dream_sequence
+                    case 'memory_corruption':
+                    case 'number_game':
+                    case 'word_association':
+                    case 'moral_dilemma':
                         hasTextInput = true;
+                        break;
+                    default:
+                         html = `<p class="text-2xl text-red-500">خطای مرحله. در حال بارگذاری مجدد...</p>`;
+                         console.error("Unknown stage type received:", type, data);
                 }
                 
-                if (isImageStage) {
-                     html = `<div data-stage-type="${type}">
-                                <p class="text-2xl md:text-3xl mb-2">${data.prompt}</p>
-                                <p class="text-lg text-gray-500 mb-4">طنین در حال ساختن تصویری از روح توست...</p>
-                                <div class="flex flex-col items-center gap-4">
-                                    <div id="generated-image-container"><span class="loader-text animate-pulse">در حال خلق...</span></div>
-                                    <div id="image-response-controls" class="hidden">
-                                        <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="احساست را بنویس...">
-                                        <div class="flex items-center justify-center gap-4 mt-4">
-                                            <button class="interactive-submit" id="submit-btn">ثبت</button>
-                                            <button class="mic-button" id="mic-btn">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>`;
-                } else if (hasTextInput) {
+                if (hasTextInput) {
                     const promptText = data.prompt || "لطفاً پاسخ دهید...";
                     html = `<div data-stage-type="${type}">
                                 <p class="text-2xl md:text-3xl mb-8">${promptText}</p>
                                 <div class="flex flex-col items-center gap-4">
-                                    <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو..." autofocus>
+                                    <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
                                     <div class="flex items-center gap-4 mt-4">
                                         <button class="interactive-submit" id="submit-btn">ثبت</button>
                                         <button class="mic-button" id="mic-btn">
@@ -392,33 +287,10 @@
                                 </div>
                             </div>`;
                 }
-                this._setContent(html).then(() => this.setupStageListeners(type, data));
+                this._setContent(html).then(() => this.setupStageListeners(type));
             },
             
-            async setupStageListeners(type, data) {
-                 if (type === 'image_reflection') {
-                    const imageContainer = document.getElementById('generated-image-container');
-                    const loaderText = imageContainer.querySelector('.loader-text');
-                    try {
-                        const imageData = await AI.generateImage(data.image_prompt);
-                        const img = document.createElement('img');
-                        img.id = 'generated-image';
-                        img.src = `data:image/png;base64,${imageData}`;
-                        
-                        loaderText.remove();
-                        imageContainer.appendChild(img);
-
-                        document.getElementById('image-response-controls').classList.remove('hidden');
-                        document.getElementById('text-input').focus();
-
-                    } catch(e) {
-                         console.error("Image generation failed:", e);
-                         imageContainer.innerHTML = `<span class="text-red-500">خلق تصویر شکست خورد.</span>`;
-                         setTimeout(() => Engine.transitionTo('loading_stage'), 3000);
-                         return;
-                    }
-                }
-                
+            setupStageListeners(type) {
                 const submitBtn = document.getElementById('submit-btn');
                 const textInput = document.getElementById('text-input');
                 const micBtn = document.getElementById('mic-btn');
@@ -432,7 +304,7 @@
                         swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseInt(swatch.dataset.collapse || 1) });
                     });
                 } else if (submitBtn && textInput) {
-                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 10) }); };
+                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 5) }); };
                     submitBtn.onclick = action;
                     textInput.onkeydown = e => { if (e.key === 'Enter') action(); };
                 }
@@ -456,60 +328,41 @@
                     console.warn("Speech recognition not supported.");
                     return;
                 }
-                // Check initial permission status if possible without a prompt
                 navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
                     this.permissionState = permissionStatus.state;
-                    permissionStatus.onchange = () => {
-                        this.permissionState = permissionStatus.state;
-                    };
+                    permissionStatus.onchange = () => { this.permissionState = permissionStatus.state; };
                 });
             },
 
             async requestAndListen() {
                 const micBtn = document.getElementById('mic-btn');
                 const textInput = document.getElementById('text-input');
-                
-                if (!this.isSupported) {
-                    if (textInput) textInput.placeholder = "گفتار پشتیبانی نمی‌شود.";
-                    if (micBtn) micBtn.disabled = true;
-                    return;
-                }
-
-                if (micBtn) micBtn.disabled = true;
+                if(micBtn) micBtn.disabled = true;
 
                 if (this.permissionState === 'denied') {
-                    UI.renderError("شما دسترسی به میکروفون را مسدود کرده‌اید. برای استفاده از این قابلیت، لطفاً از تنظیمات مرورگر خود دسترسی را مجاز کنید.")
-                      .then(() => {
-                        setTimeout(() => {
-                            if (Engine.state.lastStageContext) {
-                                UI.renderStage(Engine.state.lastStageContext.type, Engine.state.lastStageContext.data);
-                            } else {
-                                Engine.transitionTo('loading_stage');
-                            }
-                        }, 4000);
-                    });
+                    if (textInput) textInput.placeholder = "دسترسی به میکروفون مسدود است.";
+                    if(micBtn) micBtn.disabled = false;
                     return;
                 }
                 
-                // If permission is not granted, this will trigger a prompt.
-                // If it is granted, it will proceed without a prompt.
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(track => track.stop()); // We don't need the stream now, just the permission.
-                    this.permissionState = 'granted';
+                    if (this.permissionState === 'prompt') {
+                        await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.permissionState = 'granted';
+                    }
                     this.listen();
                 } catch (err) {
-                    console.error("Microphone permission error on demand:", err);
+                    console.error("Microphone permission denied by user.", err);
                     this.permissionState = 'denied';
                     if (textInput) textInput.placeholder = "دسترسی لازم است.";
-                    if (micBtn) micBtn.disabled = false;
+                } finally {
+                     if(micBtn) micBtn.disabled = false;
                 }
             },
 
             listen() {
-                if (this.recognition && this.recognition.abort) {
-                    this.recognition.abort();
-                }
+                if (!this.isSupported || this.permissionState !== 'granted') return;
+                if (this.recognition && this.recognition.abort) this.recognition.abort();
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 this.recognition = new SpeechRecognition();
@@ -519,64 +372,28 @@
                 
                 const micBtn = document.getElementById('mic-btn');
                 const textInput = document.getElementById('text-input');
-                const submitBtn = document.getElementById('submit-btn');
                 let final_transcript = '';
 
-                this.recognition.onstart = () => {
-                    if (micBtn) micBtn.classList.add('is-listening');
-                    if (submitBtn) submitBtn.disabled = true;
-                    if (textInput) textInput.placeholder = 'در حال شنیدن...';
-                };
-
+                this.recognition.onstart = () => { micBtn.classList.add('is-listening'); textInput.placeholder = 'در حال شنیدن...'; };
                 this.recognition.onend = () => {
-                    if (micBtn) {
-                        micBtn.classList.remove('is-listening');
-                        micBtn.disabled = false;
-                    }
-                    if (submitBtn) submitBtn.disabled = false;
-
+                    micBtn.classList.remove('is-listening');
                     if (final_transcript.trim()) {
                         const stageTypeElement = document.querySelector('[data-stage-type]');
                         const stageType = stageTypeElement ? stageTypeElement.dataset.stageType : 'voice_input';
-                        Engine.processUserInput({ type: stageType, choice: final_transcript, collapse: 1 + Math.floor(final_transcript.length / 10) });
-                    } else {
-                        if (textInput) textInput.placeholder = 'پاسخ تو...';
-                    }
+                        Engine.processUserInput({ type: stageType, choice: final_transcript });
+                    } else { textInput.placeholder = 'پاسخ تو...'; }
                 };
-
-                this.recognition.onerror = (event) => {
-                    console.error('Voice recognition error:', event.error);
-                    if (textInput) textInput.placeholder = `خطا: ${event.error}`;
-                    if (micBtn) {
-                        micBtn.classList.remove('is-listening');
-                        micBtn.disabled = false;
-                    }
-                    if (submitBtn) submitBtn.disabled = false;
-                };
-
+                this.recognition.onerror = (event) => { console.error('Voice recognition error:', event.error); textInput.placeholder = `خطا: ${event.error}`; };
                 this.recognition.onresult = (event) => {
                     let interim_transcript = '';
                     final_transcript = '';
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            final_transcript += event.results[i][0].transcript;
-                        } else {
-                            interim_transcript += event.results[i][0].transcript;
-                        }
+                        if (event.results[i].isFinal) final_transcript += event.results[i][0].transcript;
+                        else interim_transcript += event.results[i][0].transcript;
                     }
-                    if (textInput) textInput.value = final_transcript || interim_transcript;
+                    textInput.value = final_transcript || interim_transcript;
                 };
-
-                try {
-                    this.recognition.start();
-                } catch (e) {
-                    console.error("Recognition start error:", e);
-                    if (micBtn) {
-                        micBtn.classList.remove('is-listening');
-                        micBtn.disabled = false;
-                    }
-                    if (submitBtn) submitBtn.disabled = false;
-                }
+                try { this.recognition.start(); } catch(e) { console.error("Recognition already started."); }
             }
         };
 
@@ -584,16 +401,23 @@
         // AI, VISUALS, AUDIO MODULES
         // ===================================================================================
         const AI = {
-            async _fetchWithTimeout(resource, options = {}, timeout = 20000) {
-                const controller = new AbortController();
-                const id = setTimeout(() => controller.abort(), timeout);
-                const response = await fetch(resource, { ...options, signal: controller.signal });
-                clearTimeout(id);
-                return response;
+            async _fetchWithTimeout(resource, options = {}, timeout = 15000) {
+                 const controller = new AbortController();
+                 const id = setTimeout(() => controller.abort(), timeout);
+                 const response = await fetch(resource, { ...options, signal: controller.signal });
+                 clearTimeout(id);
+                 return response;
             },
             
-            async _query(prompt, retries = 3, backoff = 3000) {
-                const apiKey = "";
+            /**
+             * @description متد اصلی برای ارسال درخواست به Gemini API با منطق تلاش مجدد هوشمند.
+             * @param {string} prompt - پرامپت برای ارسال به مدل.
+             * @param {number} retries - تعداد تلاش‌های باقی‌مانده.
+             * @param {number} backoff - زمان انتظار (به میلی‌ثانیه) قبل از تلاش بعدی.
+             * @returns {Promise<Object>} - پاسخ JSON از API.
+             */
+            async _query(prompt, retries = 3, backoff = 2000) {
+                const apiKey = 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724'; // <-- کلید شما دست‌نخورده باقی مانده
                 const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -602,135 +426,88 @@
                     const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     
                     if (!response.ok) {
+                        // خطاهای 4xx (به‌جز 429) غیرقابل بازیابی هستند.
                         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
                             const errorBody = await response.json().catch(() => ({}));
                             const errorMessage = errorBody?.error?.message || `خطای سمت سرویس گیرنده: ${response.status}`;
                             throw new NonRetryableError(errorMessage);
                         }
+                        // خطاهای دیگر (مانند 5xx) باعث تلاش مجدد می‌شوند.
                         throw new Error(`خطای API: ${response.status}`);
                     }
                     
                     const result = await response.json();
                     if (result.candidates?.[0]?.content?.parts?.[0]) {
                         const text = result.candidates[0].content.parts[0].text;
-                        try { return JSON.parse(text.replace(/```json|```/g, '').trim()); } 
+                        try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
                         catch (e) { console.error("JSON نامعتبر از هوش مصنوعی:", text); throw new Error("پاسخ با فرمت نامعتبر از طنین."); }
                     } else if (result.error) {
-                         if (result.error.message.includes("API key not valid")) {
+                        // اگر خود API خطایی را برگرداند، آن را بررسی می‌کنیم.
+                        if (result.error.message.includes("API key not valid")) {
                              throw new NonRetryableError(result.error.message);
-                         }
-                         throw new Error(result.error.message);
-                    } 
+                        }
+                        throw new Error(result.error.message);
+                    }
                     else { throw new Error("ساختار پاسخ غیرمنتظره."); }
                 } catch (error) {
                     console.error(`تلاش ناموفق بود: ${error.message}. تعداد تلاش‌های باقی‌مانده: ${retries}`);
+                    // اگر خطا از نوع غیرقابل بازیابی بود یا تلاش‌ها تمام شده بود، آن را به Engine ارسال کن.
                     if (error instanceof NonRetryableError || retries <= 0) {
                         throw error;
                     }
+                    
+                    // صبر کن و دوباره تلاش کن
                     await new Promise(resolve => setTimeout(resolve, backoff));
-                    return this._query(prompt, retries - 1, backoff * 2);
-                }
-            },
-
-            async generateImage(prompt) {
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-                const payload = { instances: [{ prompt: prompt }], parameters: { "sampleCount": 1 } };
-                
-                const response = await this._fetchWithTimeout(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }, 30000);
-
-                if (!response.ok) {
-                    throw new Error(`Image generation failed with status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
-                    return result.predictions[0].bytesBase64Encoded;
-                } else {
-                    throw new Error("Invalid response structure from image generation API.");
+                    return this._query(prompt, retries - 1, backoff * 2); // افزایش زمان انتظار برای تلاش بعدی
                 }
             },
 
             async generateStage(type, profile) {
                 let prompt;
-                const choicesSoFar = JSON.stringify(profile.choices.map(c => c.choice).slice(-5));
                 switch (type) {
                     case 'question':
-                        prompt = `یک سوال دو گزینه‌ای فلسفی با لحن کوچه‌بازاری و تهاجمی برای "${profile.name}" طراحی کن. موضوعات: انتخاب بین بد و بدتر، حقیقت تلخ یا دروغ شیرین. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "متن گزینه", "collapse": امتیاز}]}`;
+                        prompt = `یک سوال دو گزینه‌ای فلسفی با لحن کوچه‌بازاری و تهاجمی طراحی کن. موضوعات: انتخاب بین بد و بدتر، حقیقت تلخ یا دروغ شیرین. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "متن گزینه", "collapse": امتیاز}]}`;
                         break;
                     case 'color_game':
-                        prompt = `یک سوال انتزاعی از "${profile.name}" بپرس که با یک رنگ پاسخ دهد. مثلا "رنگ «بغض» چیه؟". یک پالت ۶ تایی رنگ با معانی تاریک و امتیاز فروپاشی بده. خروجی JSON: {"prompt": "سوال", "colors": [{"hex": "#کدرنگ", "meaning": "معنی", "collapse": امتیاز}]}`;
+                        prompt = `یک سوال انتزاعی بپرس که کاربر با یک رنگ پاسخ دهد. مثلا "رنگ «بغض» چیه؟". یک پالت ۶ تایی رنگ با معانی تاریک و امتیاز فروپاشی بده. خروجی JSON: {"prompt": "سوال", "colors": [{"hex": "#کدرنگ", "meaning": "معنی", "collapse": امتیاز}]}`;
                         break;
+                    case 'number_game':
+                         prompt = `یک سوال روانشناختی بپرس که پاسخش یک عدد باشد. با لحن بی‌رحم. مثال: "چند نفر رو باید قربانی کنی تا خودت زنده بمونی؟". خروجی JSON: {"prompt": "سوال"}`;
+                         break;
                     case 'memory_corruption':
                         const targetChoice = profile.choices.length > 0 ? profile.choices[Math.floor(Math.random() * profile.choices.length)] : { choice: "سکوت" };
-                        prompt = `پاسخ قبلی کاربر "${profile.name}"، "${targetChoice.choice}" بوده. اینو تحریف کن و ازش بپرس چرا اینو گفته. مثال: اگر گفته "امید"، بپرس "یادمه میگفتی امید یه جور خودفریبیه، ${profile.name}. چرا؟". سوال باید کاربر رو به حافظه‌ش شکاک کنه. خروجی JSON: {"prompt": "سوال تحریف شده"}`;
+                        prompt = `پاسخ قبلی کاربر "${targetChoice.choice}" بوده. اینو تحریف کن و ازش بپرس چرا اینو گفته. مثال: اگر گفته "امید"، بپرس "یادمه میگفتی امید یه جور خودفریبیه. چرا؟". سوال باید کاربر رو به حافظه‌ش شکاک کنه. خروجی JSON: {"prompt": "سوال تحریف شده"}`;
                         break;
-                    case 'dream_sequence':
-                        prompt = `برای "${profile.name}"، بر اساس پاسخ‌های اخیرش (${choicesSoFar})، یک توصیف کوتاه (۲-۳ جمله)، سورئال و تاریک از یک رویا بساز. سپس یک سوال ساده درباره آن رویا از او بپرس. خروجی JSON: {"prompt": "توصیف رویا و سوال"}`;
+                    case 'rorschach_test':
+                        prompt = `یک سوال مرموز بپرس. "توی این لکه چی می‌بینی؟ چیزی که ازش فرار می‌کنی یا چیزی که دنبالشی؟". خروجی JSON: {"prompt": "سوال"}`;
                         break;
-                    case 'riddle':
-                        prompt = `یک چیستان فلسفی و تاریک برای "${profile.name}" بساز که پاسخش یک مفهوم انتزاعی باشد. خروجی JSON: {"prompt": "متن چیستان"}`;
-                        break;
-                    case 'image_reflection':
-                        prompt = `برای "${profile.name}"، بر اساس پاسخ‌های اخیرش (${choicesSoFar})، یک پرامپت برای تولید تصویر هنری بساز. پرامپت باید سورئال، تاریک و نمادین باشد. سبک: "ethereal darkness, symbolic, surrealism, octane render". سپس یک سوال کوتاه از او بپرس تا احساسش را نسبت به تصویر بیان کند. خروجی JSON: {"prompt": "سوال تو", "image_prompt": "پرامپت تصویر به انگلیسی"}`;
-                        break;
-                    default: 
-                        prompt = `برای "${profile.name}" یک سوال روانشناختی/تداعی کلمات با لحن بی‌رحم و مرموز بپرس. کلمات کلیدی: انتقام، تنهایی، قدرت، ترس، پوچی. خروجی JSON: {"prompt": "سوال تو"}`;
+                    default:
+                        prompt = `یک سوال "تداعی کلمات" با کلمه‌ای مثل «انتقام» یا «تنهایی» بپرس. خروجی JSON: {"prompt": "اولین کلمه‌ای که با شنیدن «انتقام» میاد تو ذهنت چیه؟"}`;
                 }
                 return this._query(prompt);
             },
             
-            async generateFeedback(lastInput, name) {
-                const prompt = `کاربر "${name}" به این انتخاب رسیده: "${lastInput.choice}". با لحنی کوچه‌بازاری، روانشناسانه و تهاجمی، یک جمله کوتاه و نیش‌دار بگو که انتخابش رو به چالش بکشه. انگار که داری از بالا بهش نگاه می‌کنی و او را به نام صدا می‌زنی. مثال: "جدی فکر کردی این بهترین جوابت بود، ${name}؟". خروجی JSON: {"comment": "جمله نیش‌دار تو"}`;
+            async generateFeedback(lastInput) {
+                const prompt = `کاربر به این انتخاب رسیده: "${lastInput.choice}". با لحنی کوچه‌بازاری، روانشناسانه و تهاجمی، یک جمله کوتاه و نیش‌دار بگو که انتخابش رو به چالش بکشه. انگار که داری از بالا بهش نگاه می‌کنی. مثال: "جدی فکر کردی این بهترین جوابت بود؟". خروجی JSON: {"comment": "جمله نیش‌دار تو"}`;
                 return this._query(prompt);
-            },
-
-            async generateFinalWords(profile) {
-                 const prompt = `سفر کاربر "${profile.name}" تمام شد. اینها انتخاب‌های او بودند: ${JSON.stringify(profile.choices.map(c => c.choice))}. یک متن نهایی کوتاه، شاعرانه، مبهم و قدرتمند بنویس که روح او را قضاوت یا خلاصه کند. او را مستقیماً با نام خطاب کن. خروجی JSON: {"comment": "متن نهایی"}`;
-                 return this._query(prompt);
             }
         };
-
         const Visuals = {
             ctx: document.getElementById('visual-engine').getContext('2d'),
-            width: 0, height: 0, rorschachPoints: [], time: 0, particles: [], mouse: {x:0, y:0}, isCollapsed: false,
-            init() { this.resize(); window.addEventListener('resize', () => this.resize(), false); window.addEventListener('mousemove', e => {this.mouse.x = e.clientX; this.mouse.y = e.clientY;}); this.createParticles(); this.loop(); },
-            resize() { this.width = this.ctx.canvas.width = window.innerWidth; this.height = this.ctx.canvas.height = window.innerHeight; this.createParticles(); },
-            reset() { this.isCollapsed = false; },
-            createParticles() {
-                const particleCount = Math.floor((this.width + this.height) / 8);
-                this.particles = [];
-                for (let i = 0; i < particleCount; i++) {
-                    this.particles.push({
-                        x: Math.random() * this.width,
-                        y: Math.random() * this.height,
-                        vx: (Math.random() - 0.5) * 0.5,
-                        vy: (Math.random() - 0.5) * 0.5,
-                        size: Math.random() * 1.5 + 0.5
-                    });
-                }
-            },
-            update(distortion) { if (distortion > 10 && Math.random() > 0.8) this.glitch(); },
-            triggerCollapse() { this.isCollapsed = true; },
+            width: 0, height: 0, rorschachPoints: [], time: 0,
+            init() { this.resize(); window.addEventListener('resize', () => this.resize(), false); this.loop(); },
+            resize() { this.width = this.ctx.canvas.width = window.innerWidth; this.height = this.ctx.canvas.height = window.innerHeight; },
+            update(distortion) { if (distortion > 10 && Math.random() > 0.7) this.glitch(); },
             drawRorschach() {
                 this.rorschachPoints = [];
                 const centerX = this.width / 2;
                 const centerY = this.height / 2;
-                const nodes = 5 + Math.random() * 5;
-                this.rorschachPoints.push({x: centerX, y: centerY + (Math.random()-0.5) * 100});
-
-                for (let i=0; i<nodes; i++) {
+                const points = 40 + Math.random() * 60;
+                const radius = this.width / 8 + Math.random() * 50;
+                for (let i = 0; i < points; i++) {
                     const angle = Math.random() * Math.PI;
-                    const radius = Math.random() * 150 + 50;
-                    const newPoint = {
-                        x: centerX + Math.cos(angle) * radius * (Math.random() * 0.5),
-                        y: centerY + Math.sin(angle) * radius
-                    };
-                    this.rorschachPoints.push(newPoint);
+                    const r = Math.pow(Math.random(), 2) * radius;
+                    this.rorschachPoints.push({ x: centerX + Math.cos(angle) * r, y: centerY + Math.sin(angle) * r });
                 }
             },
             glitch() {
@@ -740,123 +517,38 @@
                 this.ctx.drawImage(canvas, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20);
             },
             loop() {
-                if (this.isCollapsed) {
-                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-                    this.ctx.fillRect(0,0,this.width, this.height);
-                } else {
-                    this.ctx.globalCompositeOperation = 'source-over';
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-                    this.ctx.fillRect(0, 0, this.width, this.height);
-                    
-                    const distortionFactor = 1 + Engine.state.distortion / 10;
-                    this.ctx.fillStyle = `rgba(211, 47, 47, ${0.1 + Math.min(Engine.state.distortion / 50, 0.4)})`;
-                    this.particles.forEach(p => {
-                        const dx = p.x - this.mouse.x;
-                        const dy = p.y - this.mouse.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < 100) {
-                            p.vx += dx / dist * 0.1;
-                            p.vy += dy / dist * 0.1;
-                        }
-
-                        p.x += p.vx * distortionFactor;
-                        p.y += p.vy * distortionFactor;
-                        p.vx *= 0.98;
-                        p.vy *= 0.98;
-                        if (p.x > this.width || p.x < 0 || p.y > this.height || p.y < 0) {
-                           p.x = Math.random() * this.width;
-                           p.y = Math.random() * this.height;
-                        }
-                        this.ctx.beginPath();
-                        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-                        this.ctx.fill();
-                    });
-                }
+                this.ctx.globalCompositeOperation = 'source-over';
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
                 
                 if (this.rorschachPoints.length > 0) {
-                    this.ctx.strokeStyle = 'rgba(200, 200, 200, 0.8)';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(this.rorschachPoints[0].x, this.rorschachPoints[0].y);
-                    for (let i = 1; i < this.rorschachPoints.length - 1; i++) {
-                        const xc = (this.rorschachPoints[i].x + this.rorschachPoints[i + 1].x) / 2;
-                        const yc = (this.rorschachPoints[i].y + this.rorschachPoints[i + 1].y) / 2;
-                        this.ctx.quadraticCurveTo(this.rorschachPoints[i].x, this.rorschachPoints[i].y, xc, yc);
-                    }
-                    this.ctx.stroke();
-                     this.ctx.save();
-                     this.ctx.translate(this.width, 0);
-                     this.ctx.scale(-1, 1);
-                     this.ctx.drawImage(this.ctx.canvas, 0, 0);
-                     this.ctx.restore();
-                    
-                    if (Math.random() > 0.95) this.rorschachPoints = [];
+                     this.ctx.fillStyle = 'rgba(200, 200, 200, 0.8)';
+                     this.rorschachPoints.forEach(p => {
+                         this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); this.ctx.fill();
+                         const mirroredX = this.width - p.x;
+                         this.ctx.beginPath(); this.ctx.arc(mirroredX, p.y, 2, 0, Math.PI * 2); this.ctx.fill();
+                     });
+                     if (Math.random() > 0.95) this.rorschachPoints.shift();
                 }
-
                 requestAnimationFrame(() => this.loop());
             }
         };
-
         const Audio = {
             isSetup: false,
             init() {
                 if (this.isSetup) return;
                 this.reverb = new Tone.Reverb({ decay: 8, wet: 0.6 }).toDestination();
-                this.bitCrusher = new Tone.BitCrusher(8).connect(this.reverb);
-                this.wind = new Tone.Noise("pink").connect(new Tone.AutoFilter({ frequency: "8m", baseFrequency: 100, octaves: 4 }).connect(this.bitCrusher));
-                this.wind.volume.value = -30;
+                this.wind = new Tone.Noise("pink").connect(
+                    new Tone.AutoFilter({ frequency: "8m", baseFrequency: 100, octaves: 4 }).connect(this.reverb)
+                );
+                this.wind.volume.value = -25;
                 this.wind.start();
-                
-                this.heartbeat = new Tone.MembraneSynth({
-                    pitchDecay: 0.01,
-                    octaves: 2,
-                    envelope: { attack: 0.001, decay: 0.8, sustain: 0.01, release: 0.1 }
-                }).connect(this.reverb);
-                this.heartbeat.volume.value = -15;
-
-                this.fxSynth = new Tone.FMSynth({
-                    harmonicity: 3,
-                    modulationIndex: 10,
-                    envelope: { attack: 0.01, decay: 0.2 }
-                }).connect(this.reverb);
-                this.fxSynth.volume.value = -20;
-                
                 this.isSetup = true;
-            },
-            reset() {
-                if (!this.isSetup) return;
-                this.wind.volume.rampTo(-30, 1);
-                this.bitCrusher.bits.value = 8;
-                if(this.heartbeatLoop) this.heartbeatLoop.stop();
             },
             update(distortion) {
                 if (!this.isSetup) return;
-                const newVolume = -30 + (distortion * 1.2);
-                this.wind.volume.rampTo(Math.min(-12, newVolume), 3);
-                this.bitCrusher.bits.value = Math.max(1, 8 - Math.floor(distortion / 4));
-                
-                if (distortion > 18 && (!this.heartbeatLoop || this.heartbeatLoop.state !== 'started')) {
-                   this.heartbeatLoop = new Tone.Loop(time => {
-                       this.heartbeat.triggerAttackRelease("C1", "8n", time);
-                   }, "2n").start(0);
-                   Tone.Transport.start();
-                } else if (distortion <= 18 && this.heartbeatLoop && this.heartbeatLoop.state === 'started') {
-                    this.heartbeatLoop.stop();
-                }
-            },
-            triggerFx() {
-                if (!this.isSetup) return;
-                this.fxSynth.triggerAttackRelease("G5", "16n");
-            },
-            playEndingSound() {
-                if (!this.isSetup) return;
-                this.wind.volume.rampTo(-Infinity, 5);
-                if(this.heartbeatLoop) this.heartbeatLoop.stop();
-                const endingSynth = new Tone.NoiseSynth({
-                    noise: { type: 'white' },
-                    envelope: { attack: 2, decay: 3, sustain: 0, release: 2 }
-                }).toDestination();
-                endingSynth.triggerAttackRelease("5s");
+                const newVolume = -25 + (distortion * 1.5);
+                this.wind.volume.rampTo(Math.min(-10, newVolume), 3);
             }
         };
 
