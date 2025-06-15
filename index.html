@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>خلسه</title>
+    <title>خلسه (نسخه اصلاح شده)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
@@ -84,10 +84,25 @@
             },
 
             init() {
-                UI.init();
-                Visuals.init();
-                Voice.init();
-                UI.renderIntro();
+                // *** NEW: Check for API key before starting the experience ***
+                this.ensureApiKey().then(() => {
+                    UI.init();
+                    Visuals.init();
+                    Voice.init();
+                    UI.renderIntro();
+                });
+            },
+            
+            async ensureApiKey() {
+                // Check if the API key is already stored in the browser's local storage
+                if (localStorage.getItem('gemini_api_key')) {
+                    return Promise.resolve();
+                } else {
+                    // If not, show a prompt to the user to enter their key
+                    return new Promise(resolve => {
+                        UI.renderApiKeyPrompt(resolve);
+                    });
+                }
             },
 
             async primeAudioAndStart() {
@@ -153,14 +168,20 @@
             
             handleAIError(error) {
                 console.error("Entity Communication Failed:", error);
-                UI.renderError("ارتباط با طنین... مختل شد. تلاش مجدد...");
-                setTimeout(() => this.transitionTo('loading_stage'), 5000);
+                 // *** NEW: Better error message for API key issues ***
+                if (error.message.includes("API Error: 400") || error.message.includes("API key not valid")) {
+                     localStorage.removeItem('gemini_api_key'); // Remove invalid key
+                     UI.renderError("کلید API نامعتبر است. لطفاً صفحه را رفرش کرده و کلید معتبر وارد کنید.");
+                } else {
+                     UI.renderError("ارتباط با طنین... مختل شد. تلاش مجدد...");
+                     setTimeout(() => this.transitionTo('loading_stage'), 5000);
+                }
             },
 
             processUserInput(inputData) {
                 this.state.lastInput = inputData;
                 this.state.userProfile.choices.push(inputData);
-                this.state.distortion += inputData.collapse;
+                this.state.distortion += inputData.collapse || 1; // Fallback collapse value
                 Visuals.update(this.state.distortion);
                 if (this.state.isAudioReady) Audio.update(this.state.distortion);
                 this.transitionTo('loading_feedback');
@@ -186,12 +207,37 @@
             _setContent(html, anim = 'fadeIn') {
                 return new Promise(res => {
                     const wrapper = document.getElementById('content-wrapper');
-                    wrapper.style.animation = 'fadeOut 1s forwards';
+                    wrapper.style.animation = 'fadeOut 0.5s forwards';
                     setTimeout(() => {
                         wrapper.innerHTML = html;
                         wrapper.style.animation = `${anim} 1s forwards`;
                         res();
-                    }, 1000);
+                    }, 500);
+                });
+            },
+             // *** NEW: Function to render the API key input prompt ***
+            renderApiKeyPrompt(onKeySaved) {
+                const html = `
+                    <div class="flex flex-col items-center gap-4">
+                        <h2 class="text-2xl font-bold text-red-500">نیاز به کلید API</h2>
+                        <p class="text-gray-400 max-w-md">برای ارتباط با هوش مصنوعی، لطفاً کلید Google AI API خود را وارد کنید. این کلید در مرورگر شما ذخیره خواهد شد.</p>
+                        <p class="text-gray-500 text-sm">می‌توانید کلید رایگان خود را از <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">Google AI Studio</a> دریافت کنید.</p>
+                        <input type="password" id="api-key-input" class="interactive-input" placeholder="کلید API را اینجا وارد کنید..." style="font-size: 1.2rem; direction: ltr;">
+                        <button id="save-api-key-btn" class="interactive-button mt-4">ذخیره و ادامه</button>
+                    </div>
+                `;
+                this._setContent(html).then(() => {
+                    const input = document.getElementById('api-key-input');
+                    const saveBtn = document.getElementById('save-api-key-btn');
+                    saveBtn.onclick = () => {
+                        const key = input.value.trim();
+                        if (key) {
+                            localStorage.setItem('gemini_api_key', key);
+                            onKeySaved(); // Signal to the engine that we can proceed
+                        } else {
+                            input.placeholder = "لطفاً یک کلید معتبر وارد کنید!";
+                        }
+                    };
                 });
             },
             renderIntro() {
@@ -211,15 +257,16 @@
                 let hasTextInput = false;
                 switch(type) {
                     case 'question':
-                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div>${data.choices.map(c => `<button class="interactive-button" data-collapse="${c.collapse}">${c.text}</button>`).join('')}</div>`;
+                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div data-stage-type="${type}">${data.choices.map(c => `<button class="interactive-button" data-collapse="${c.collapse}">${c.text}</button>`).join('')}</div>`;
                         break;
                     case 'color_game':
-                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div class="color-palette">${data.colors.map(c => `<div class="color-swatch" style="background-color: ${c.hex};" data-collapse="${c.collapse}" data-meaning="${c.meaning}"></div>`).join('')}</div>`;
+                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div class="color-palette" data-stage-type="${type}">${data.colors.map(c => `<div class="color-swatch" style="background-color: ${c.hex};" data-collapse="${c.collapse}" data-meaning="${c.meaning}"></div>`).join('')}</div>`;
                         break;
                     case 'rorschach_test':
                         Visuals.drawRorschach();
                         hasTextInput = true;
                         break;
+                    // Consolidate text input stages
                     case 'memory_corruption':
                     case 'number_game':
                     case 'word_association':
@@ -232,14 +279,16 @@
                 }
                 
                 if (hasTextInput) {
-                    html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
-                            <div class="flex flex-col items-center gap-4">
-                                <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
-                                <div class="flex items-center gap-4 mt-4">
-                                    <button class="interactive-submit" id="submit-btn">ثبت</button>
-                                    <button class="mic-button" id="mic-btn">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
-                                    </button>
+                    html = `<div data-stage-type="${type}">
+                                <p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
+                                <div class="flex flex-col items-center gap-4">
+                                    <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
+                                    <div class="flex items-center gap-4 mt-4">
+                                        <button class="interactive-submit" id="submit-btn">ثبت</button>
+                                        <button class="mic-button" id="mic-btn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>`;
                 }
@@ -272,25 +321,21 @@
         };
 
         // ===================================================================================
-        // VOICE MODULE: Handles Speech Recognition with Permissions & Auto-Submit
-        // *** REFACTORED: Now includes a robust permission flow and auto-submit logic. ***
+        // VOICE MODULE: Handles Speech Recognition
         // ===================================================================================
         const Voice = {
             recognition: null,
             isSupported: ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window),
-            permissionState: 'prompt', // 'prompt', 'granted', 'denied'
+            permissionState: 'prompt',
 
             init() {
                 if (!this.isSupported) {
                     console.warn("Speech recognition not supported.");
                     return;
                 }
-                // Check initial permission status
                 navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
                     this.permissionState = permissionStatus.state;
-                    permissionStatus.onchange = () => {
-                        this.permissionState = permissionStatus.state;
-                    };
+                    permissionStatus.onchange = () => { this.permissionState = permissionStatus.state; };
                 });
             },
 
@@ -326,13 +371,15 @@
                     return;
                 }
 
-                if (!this.recognition) {
-                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    this.recognition = new SpeechRecognition();
-                    this.recognition.continuous = false;
-                    this.recognition.lang = 'fa-IR';
-                    this.recognition.interimResults = true;
+                if (this.recognition && this.recognition.abort) {
+                    this.recognition.abort();
                 }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.recognition = new SpeechRecognition();
+                this.recognition.continuous = false;
+                this.recognition.lang = 'fa-IR';
+                this.recognition.interimResults = true;
                 
                 const micBtn = document.getElementById('mic-btn');
                 const textInput = document.getElementById('text-input');
@@ -345,19 +392,12 @@
                     final_transcript = '';
                 };
 
-                // Auto-submit logic is now in onend
                 this.recognition.onend = () => {
                     micBtn.classList.remove('is-listening');
                     if (final_transcript.trim()) {
-                         // Find the stage type from the current UI. This is a bit of a hack but works.
                         const stageTypeElement = document.querySelector('[data-stage-type]');
                         const stageType = stageTypeElement ? stageTypeElement.dataset.stageType : 'voice_input';
-
-                        Engine.processUserInput({
-                            type: stageType,
-                            choice: final_transcript,
-                            collapse: 1 + Math.floor(final_transcript.length / 5)
-                        });
+                        Engine.processUserInput({ type: stageType, choice: final_transcript });
                     } else {
                         textInput.placeholder = 'پاسخ تو...';
                     }
@@ -370,7 +410,7 @@
                 
                 this.recognition.onresult = (event) => {
                     let interim_transcript = '';
-                    final_transcript = ''; // Reset on new result
+                    final_transcript = '';
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
                         if (event.results[i].isFinal) {
                             final_transcript += event.results[i][0].transcript;
@@ -381,14 +421,12 @@
                     textInput.value = final_transcript || interim_transcript;
                 };
 
-                try {
-                    this.recognition.start();
-                } catch(e) { console.error("Recognition already started."); }
+                try { this.recognition.start(); } catch(e) { console.error("Recognition already started."); }
             }
         };
 
         // ===================================================================================
-        // AI, VISUALS, AUDIO MODULES (Stable versions)
+        // AI, VISUALS, AUDIO MODULES
         // ===================================================================================
         const AI = {
             async _fetchWithTimeout(resource, options = {}, timeout = 15000) {
@@ -399,20 +437,35 @@
                  return response;
             },
             async _query(prompt) {
+                // *** MODIFIED: Get API key from local storage ***
+                const apiKey = localStorage.getItem('gemini_api_key');
+                if (!apiKey) {
+                    throw new Error("API key not found. Please refresh and enter your key.");
+                }
+
                 const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
-                const apiKey = "";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 
                 const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                if (!response.ok) {
+                    // *** NEW: Better error handling for bad keys ***
+                     if (response.status === 400) {
+                        throw new Error(`API Error: ${response.status}. API key not valid. Please pass a valid API key.`);
+                    }
+                    throw new Error(`API Error: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 if (result.candidates?.[0]?.content?.parts?.[0]) {
                     const text = result.candidates[0].content.parts[0].text;
-                    try { return JSON.parse(text.replace(/```json|```/g, '')); }
+                    try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
                     catch (e) { console.error("Invalid JSON from AI:", text); throw new Error("Invalid JSON from entity."); }
-                } else { throw new Error("Unexpected response structure."); }
+                } else if (result.error) {
+                    console.error("API Error Response:", result.error.message);
+                    throw new Error(result.error.message);
+                }
+                else { throw new Error("Unexpected response structure."); }
             },
             async generateStage(type, profile) {
                 let prompt;
@@ -465,15 +518,11 @@
             glitch() {
                 const canvas = this.ctx.canvas;
                 const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
-                const a = Math.random() * this.height;
-                const b = Math.random() * this.height;
-                const h = Math.random() * 80 + 20;
                 this.ctx.putImageData(imageData, (Math.random() * 30 - 15), 0);
-                this.ctx.drawImage(canvas, 0, a, this.width, h, 0, b, this.width, h);
+                this.ctx.drawImage(canvas, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20);
             },
             loop() {
-                this.time += 0.01;
-                this.ctx.globalAlpha = 0.05 + Math.sin(this.time) * 0.02;
+                this.ctx.globalCompositeOperation = 'source-over';
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
                 this.ctx.fillRect(0, 0, this.width, this.height);
                 
