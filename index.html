@@ -9,9 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #b71c1c; /* A darker, more blood-like red */
+            --primary-color: #d32f2f;
             --background-color: #000;
-            --text-color: #cfd8dc;
+            --text-color: #b0bec5;
         }
         html, body {
             width: 100%; height: 100%; margin: 0; padding: 0;
@@ -23,78 +23,61 @@
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
         }
-        #background-image {
-            position: fixed;
-            top: -5%; left: -5%;
-            width: 110%; height: 110%;
-            background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            z-index: 1;
-            transition: filter 3s ease-in-out, transform 3s ease-in-out;
-            filter: blur(2px) brightness(0.6);
-            transform: scale(1);
-        }
-        @keyframes screen-shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-            20%, 40%, 60%, 80% { transform: translateX(8px); }
-        }
-        .shake-effect { animation: screen-shake 0.5s ease-in-out; }
-        #particle-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
         #ui-layer { z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; padding: 1rem; color: var(--text-color); }
-        #content-wrapper { width: 95%; max-width: 800px; z-index: 11; position: relative; }
-        #cursor-follower { position: fixed; width: 22px; height: 22px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.8); pointer-events: none; z-index: 9999; mix-blend-mode: difference; transition: transform 0.1s ease-out, opacity 0.3s ease; will-change: transform; opacity: 0; }
-        @keyframes fadeIn { from { opacity: 0; filter: blur(10px); transform: translateY(20px) scale(0.98); } to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); } }
-        @keyframes fadeOut { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(10px); transform: scale(0.98); } }
-        
+        #content-wrapper { width: 95%; max-width: 800px; }
+        #cursor-follower {
+            position: fixed; width: 20px; height: 20px;
+            border-radius: 50%; border: 2px solid var(--text-color);
+            pointer-events: none; z-index: 9999; mix-blend-mode: exclusion;
+            transition: transform 0.1s ease-out, opacity 0.3s ease;
+            will-change: transform; opacity: 0;
+        }
+        @keyframes fadeIn { from { opacity: 0; filter: blur(5px); transform: scale(0.95); } to { opacity: 1; filter: blur(0); transform: scale(1); } }
+        @keyframes fadeOut { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(5px); } }
         .interactive-button, .interactive-submit, .mic-button {
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-            border: 1px solid var(--primary-color); color: var(--primary-color);
-            padding: 12px 24px; font-size: 1.1rem; transition: all 0.2s; margin: 8px;
+            background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);
+            padding: 10px 20px; font-size: 1.1rem; transition: all 0.2s; margin: 5px;
             display: inline-flex; align-items: center; justify-content: center;
         }
-        .interactive-button:hover:not(:disabled), .interactive-submit:hover, .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 25px var(--primary-color); transform: translateY(-2px) scale(1.05); }
-        .interactive-button:disabled, .mic-button:disabled { opacity: 0.4; cursor: not-allowed; }
-        .mic-button.is-listening { background: var(--primary-color); color: var(--background-color); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(183, 28, 28, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(183, 28, 28, 0); } 100% { box-shadow: 0 0 0 0 rgba(183, 28, 28, 0); } }
-
-        /* Stage specific styles */
-        #stroop-prompt { font-size: 4rem; font-weight: 900; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
-        #generated-image-container { max-width: 90%; max-height: 400px; margin: 1rem auto; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #444; }
-        #generated-image { max-width: 100%; max-height: 380px; object-fit: contain; }
-        .image-loader { color: white; font-size: 1.5rem; }
+        .interactive-button:hover:not(:disabled), .interactive-submit:hover, .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 20px var(--primary-color); transform: scale(1.05); }
+        .interactive-button:disabled, .mic-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .mic-button.is-listening {
+            background: var(--primary-color); color: var(--background-color);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(211, 47, 47, 0); } 100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); } }
+        .interactive-input {
+            background: transparent; color: #fff; border: none; border-bottom: 2px solid var(--text-color);
+            text-align: center; width: 80%; max-width: 450px; font-size: 2rem; padding: 5px;
+        }
+        .interactive-input:focus { outline: none; border-color: var(--primary-color); }
+        .color-palette { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 2rem; }
+        .color-swatch { width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s; }
+        .color-swatch:hover { transform: scale(1.15); border-color: #fff; }
+        #feedback-text { font-size: 1.5rem; font-style: italic; color: #64b5f6; text-shadow: 0 0 10px #64b5f6; }
     </style>
 </head>
 <body>
     <div id="app-container">
-        <div id="visual-engine">
-            <div id="background-image"></div>
-            <canvas id="particle-overlay"></canvas>
-        </div>
+        <canvas id="visual-engine"></canvas>
         <div id="ui-layer"><div id="content-wrapper"></div></div>
     </div>
     <div id="cursor-follower"></div>
 
     <script>
         // ===================================================================================
-        // UTILITIES & HARDWARE
+        // UTILITIES & CUSTOM ERRORS
         // ===================================================================================
+        /**
+         * @description کلاس خطای سفارشی برای خطاهایی که نباید دوباره تلاش شوند.
+         * این خطاها معمولاً خطاهای سمت کاربر هستند (مانند کلید API نامعتبر).
+         */
         class NonRetryableError extends Error {
-            constructor(message) { super(message); this.name = "NonRetryableError"; }
-        }
-        const Hardware = {
-            vibrate(pattern = [200, 100, 200]) {
-                if ('vibrate' in navigator) {
-                    try { navigator.vibrate(pattern); } catch (e) { console.warn("Could not vibrate:", e); }
-                }
-            },
-            shakeScreen() {
-                const app = document.getElementById('app-container');
-                app.classList.add('shake-effect');
-                setTimeout(() => app.classList.remove('shake-effect'), 500);
+            constructor(message) {
+                super(message);
+                this.name = "NonRetryableError";
             }
-        };
+        }
 
         // ===================================================================================
         // CORE MODULE: The Game's Soul
@@ -102,121 +85,122 @@
         const Engine = {
             state: {
                 currentFlow: 'intro',
-                distortion: 0.0,
-                userProfile: { choices: [], personality: 'رفیق بازاری' },
+                distortion: 0,
+                userProfile: { name: 'مسافر', choices: [] },
                 lastInput: null,
                 isAudioReady: false,
-                micPermission: 'prompt',
             },
 
             init() {
                 UI.init();
                 Visuals.init();
+                Voice.init();
                 UI.renderIntro();
             },
 
-            async primeSystemAndStart() {
-                UI.renderLoader("در انتظار اجازه‌ی تو...");
+            async primeAudioAndStart() {
                 try {
                     if (!this.state.isAudioReady) {
                         await Tone.start();
                         Audio.init();
                         this.state.isAudioReady = true;
                     }
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(track => track.stop());
-                    this.state.micPermission = 'granted';
                     this.startExperience();
-                } catch (err) {
-                    console.error("Permission denied:", err);
-                    this.state.micPermission = 'denied';
-                    UI.renderLoader("دسترسی به میکروفون رد شد. تجربه بدون صدا ادامه پیدا می‌کنه...");
-                    setTimeout(() => this.startExperience(), 2500);
+                } catch(e) {
+                    console.error("Audio Context Failed To Start:", e);
+                    UI.renderError("خطا در زمینه صوتی. بازی بدون صدا ادامه می‌یابد.");
+                    setTimeout(() => this.startExperience(), 2000);
                 }
             },
 
-            startExperience() { this.transitionTo('loading_stage'); },
+            startExperience() {
+                this.transitionTo('loading_stage');
+            },
 
             async transitionTo(flowState, context = {}) {
                 this.state.currentFlow = flowState;
                 switch (flowState) {
                     case 'loading_stage':
-                        await UI.renderLoader("ذهن داره برات یه چیزی جور می‌کنه...");
+                        await UI.renderLoader("طنین در حال یافتن توست...");
                         const stageType = this.determineNextStage();
                         try {
-                            if (stageType === 'image_generation_test') {
-                                this.transitionTo('generating_image');
+                            const stageData = await AI.generateStage(stageType, this.state.userProfile);
+                            if (!stageData) throw new Error("AI returned no data");
+                            this.transitionTo('stage', { type: stageType, data: stageData });
+                        } catch (e) {
+                            if (e instanceof NonRetryableError) {
+                                this.handleAIFatalError(e);
                             } else {
-                                const stageData = await AI.generateStage(stageType, this.state.userProfile);
-                                this.transitionTo('stage', { type: stageType, data: stageData });
+                                this.handleAITemporaryFailure(() => this.transitionTo('loading_stage', context));
                             }
-                        } catch (e) { this.handleAIError(e, () => this.transitionTo('loading_stage')); }
-                        break;
-                    
-                    case 'generating_image':
-                        await UI.renderLoader("در حال خلق یک تصویر از اعماق ذهن...");
-                        try {
-                            const imageData = await AI.generateImage(this.state.userProfile);
-                             this.transitionTo('stage', { type: 'image_generation_test', data: imageData });
-                        } catch (e) { this.handleAIError(e, () => this.transitionTo('loading_stage')); }
-                        break;
-
-                    case 'stage':
-                        UI.renderStage(context.type, context.data);
-                        if (context.type === 'vibration_event') {
-                            Hardware.vibrate();
-                            Hardware.shakeScreen();
                         }
                         break;
-
-                    case 'loading_feedback':
-                        await UI.renderLoader("دارم حرفاتو هضم می‌کنم...");
-                        try {
-                            const feedbackData = await AI.generateFeedback(this.state.lastInput, this.state.userProfile.personality);
-                            this.transitionTo('feedback', { data: feedbackData });
-                        } catch (e) { this.handleAIError(e, () => this.transitionTo('loading_feedback')); }
+                    case 'stage':
+                        UI.renderStage(context.type, context.data);
                         break;
-
+                    case 'loading_feedback':
+                        await UI.renderLoader("در حال تحلیل پاسخ تو...");
+                        try {
+                            const feedbackData = await AI.generateFeedback(this.state.lastInput);
+                            if (!feedbackData) throw new Error("AI returned no feedback");
+                            this.transitionTo('feedback', { data: feedbackData });
+                        } catch (e) {
+                            if (e instanceof NonRetryableError) {
+                                this.handleAIFatalError(e);
+                            } else {
+                                this.handleAITemporaryFailure(() => this.transitionTo('loading_feedback', context));
+                            }
+                        }
+                        break;
                     case 'feedback':
                         await UI.renderFeedback(context.data.comment);
-                        setTimeout(() => this.transitionTo('loading_stage'), 6000);
+                        setTimeout(() => this.transitionTo('loading_stage'), 5000);
                         break;
-
                     default:
-                        this.handleAIError(new Error("Flow state ناشناخته."), () => this.startExperience());
+                        console.error("Unknown flow state:", flowState);
+                        this.handleAIFatalError(new Error("Unknown flow state"));
                 }
             },
             
             determineNextStage() {
-                const stages = ['question', 'stroop_test', 'word_association'];
-                if (this.state.distortion > 3) stages.push('moral_dilemma');
-                if (this.state.distortion > 6) stages.push('image_generation_test');
-                if (this.state.distortion > 9 && Math.random() < 0.3) stages.push('vibration_event'); // Rare event
-                if (this.state.distortion > 12 && this.state.userProfile.choices.length > 3) stages.push('memory_corruption');
-                
+                const stages = ['question', 'color_game', 'number_game', 'word_association', 'moral_dilemma'];
+                if (this.state.distortion > 5) stages.push('rorschach_test');
+                if (this.state.distortion > 10 && this.state.userProfile.choices.length > 2) {
+                    stages.push('memory_corruption');
+                }
                 return stages[Math.floor(Math.random() * stages.length)];
             },
             
-            handleAIError(error, retryFunction) {
-                console.error("AI Error:", error);
+            /**
+             * @description مدیریت خطاهای موقت (مثلاً شبکه). یک پیام به کاربر نشان داده و پس از تاخیر، عملیات را مجدداً امتحان می‌کند.
+             * @param {Function} retryFunction - تابعی که باید پس از تاخیر اجرا شود.
+             * @param {string} message - پیامی که به کاربر نمایش داده می‌شود.
+             */
+            handleAITemporaryFailure(retryFunction, message = "ارتباط با طنین ناپایدار است. در حال تلاش برای اتصال مجدد...") {
+                console.warn("Temporary AI failure. Retrying in 7 seconds.");
+                UI.renderLoader(message);
+                setTimeout(() => {
+                    retryFunction();
+                }, 7000); // تاخیر ۷ ثانیه‌ای برای بازیابی
+            },
+
+            /**
+             * @description مدیریت خطاهای دائمی (غیرقابل بازیابی). یک پیام نهایی به کاربر نمایش داده و جریان بازی را متوقف می‌کند.
+             * @param {Error} error - شیء خطا.
+             */
+            handleAIFatalError(error) {
+                console.error("Entity Communication Failed and will not be retried:", error);
+                let userMessage = "ارتباط با طنین به طور کامل قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.";
                 if (error instanceof NonRetryableError) {
-                    UI.renderError(`ارتباط با ذهن قطع شد: ${error.message}.`);
-                } else {
-                    UI.renderLoader("امواج مغزی ضعیفه... دارم دوباره سعی می‌کنم.");
-                    setTimeout(retryFunction, 7000);
+                    userMessage = `یک خطای غیرقابل بازیابی رخ داد: ${error.message}. لطفاً صفحه را رفرش کنید.`;
                 }
+                UI.renderError(userMessage);
             },
 
             processUserInput(inputData) {
                 this.state.lastInput = inputData;
                 this.state.userProfile.choices.push(inputData);
-                
-                const collapseAmount = inputData.collapse || 1.0;
-                this.state.distortion += collapseAmount;
-
-                if (this.state.distortion > 15) this.state.userProfile.personality = 'روانی و بی‌پرده';
-                else if (this.state.distortion > 8) this.state.userProfile.personality = 'تیکه‌انداز و بی‌رحم';
-
+                this.state.distortion += inputData.collapse || 1;
                 Visuals.update(this.state.distortion);
                 if (this.state.isAudioReady) Audio.update(this.state.distortion);
                 this.transitionTo('loading_feedback');
@@ -224,10 +208,10 @@
         };
         
         // ===================================================================================
-        // UI MODULE
+        // UI MODULE: The Visual Interface
         // ===================================================================================
         const UI = {
-            init() { /* ... unchanged ... */
+            init() {
                 const cursor = document.getElementById('cursor-follower');
                 if (cursor) {
                     window.addEventListener('mousemove', e => {
@@ -239,13 +223,13 @@
                     document.body.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; });
                 }
             },
-            _setContent(html) {
+            _setContent(html, anim = 'fadeIn') {
                 return new Promise(res => {
                     const wrapper = document.getElementById('content-wrapper');
-                    wrapper.style.animation = 'fadeOut 0.5s forwards ease-in-out';
+                    wrapper.style.animation = 'fadeOut 0.5s forwards';
                     setTimeout(() => {
                         wrapper.innerHTML = html;
-                        wrapper.style.animation = `fadeIn 1s forwards ease-in-out`;
+                        wrapper.style.animation = `${anim} 1s forwards`;
                         res();
                     }, 500);
                 });
@@ -253,94 +237,131 @@
             
             renderIntro() {
                this._setContent(`
-                    <h1 class="text-6xl md:text-7xl font-black text-white" style="text-shadow: 0 0 15px rgba(255,255,255,0.3);">خلسه</h1>
-                    <p class="mt-4 text-gray-400 text-xl">یه ذهن منتظرته. جرئتشو داری؟</p>
-                    <button id="start-btn" class="interactive-button mt-8">بزن بریم</button>
+                    <h1 class="text-6xl font-black">خلسه</h1>
+                    <p class="mt-4 text-gray-500">یک هم‌صحبت، در انتظار توست.</p>
+                    <button id="start-btn" class="interactive-button mt-8">آغاز کن</button>
                 `).then(() => {
-                    document.getElementById('start-btn').onclick = () => Engine.primeSystemAndStart();
+                    document.getElementById('start-btn').onclick = () => Engine.primeAudioAndStart();
                 });
             },
             renderLoader(text) { return this._setContent(`<p class="text-2xl text-gray-400">${text}</p>`); },
-            renderError(msg) { return this._setContent(`<p class="text-2xl text-red-400">${msg}</p>`); },
-            renderFeedback(comment) { return this._setContent(`<p class="text-2xl font-bold text-blue-300">"${comment}"</p>`); },
-
+            renderError(msg) { return this._setContent(`<p class="text-2xl text-red-500">${msg}</p>`); },
+            renderFeedback(comment) { return this._setContent(`<p id="feedback-text">"${comment}"</p>`); },
             renderStage(type, data) {
                 let html = '';
+                let hasTextInput = false;
                 switch(type) {
                     case 'question':
                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div data-stage-type="${type}">${data.choices.map(c => `<button class="interactive-button" data-collapse="${c.collapse}">${c.text}</button>`).join('')}</div>`;
                         break;
-                    case 'stroop_test':
-                        html = `<p class="text-2xl md:text-3xl mb-6">${data.prompt}</p>
-                                <p id="stroop-prompt" style="color: ${data.display_color};">${data.word}</p>
-                                <div class="color-palette mt-8" data-stage-type="${type}" data-correct="${data.correct_answer}">${data.choices.map(c => `<div class="color-swatch" style="background-color: ${c};" data-choice="${c}"></div>`).join('')}</div>`;
+                    case 'color_game':
+                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div class="color-palette" data-stage-type="${type}">${data.colors.map(c => `<div class="color-swatch" style="background-color: ${c.hex};" data-collapse="${c.collapse}" data-meaning="${c.meaning}"></div>`).join('')}</div>`;
                         break;
-                    case 'image_generation_test':
-                         html = `<p class="text-2xl md:text-3xl mb-4">${data.prompt}</p>
-                                 <div id="generated-image-container">
-                                     <img id="generated-image" src="${data.imageUrl}" alt="تصویر خلق شده توسط هوش مصنوعی">
-                                 </div>
-                                 <div class="flex flex-col items-center gap-4 mt-4">
-                                     <input type="text" id="text-input" class="interactive-input" autocomplete="off" placeholder="چه حسی داری؟...">
-                                     <button id="submit-btn" class="interactive-submit">بفرست</button>
-                                 </div>`;
+                    case 'rorschach_test':
+                        Visuals.drawRorschach();
+                        hasTextInput = true;
                         break;
-                    case 'vibration_event':
-                        html = `<p class="text-3xl md:text-4xl font-black text-red-500">${data.prompt}</p>`;
-                        setTimeout(() => Engine.processUserInput({ type: type, choice: 'لرزش احساس شد', collapse: 3 }), 3000);
+                    case 'memory_corruption':
+                    case 'number_game':
+                    case 'word_association':
+                    case 'moral_dilemma':
+                        hasTextInput = true;
                         break;
-                    default: // word_association, moral_dilemma, memory_corruption
-                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
+                    default:
+                         html = `<p class="text-2xl text-red-500">خطای مرحله. در حال بارگذاری مجدد...</p>`;
+                         console.error("Unknown stage type received:", type, data);
+                }
+                
+                if (hasTextInput) {
+                    const promptText = data.prompt || "لطفاً پاسخ دهید...";
+                    html = `<div data-stage-type="${type}">
+                                <p class="text-2xl md:text-3xl mb-8">${promptText}</p>
                                 <div class="flex flex-col items-center gap-4">
-                                    <input type="text" id="text-input" class="interactive-input" autocomplete="off" placeholder="جوابتو بنویس...">
+                                    <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
                                     <div class="flex items-center gap-4 mt-4">
-                                        <button id="submit-btn" class="interactive-submit">بفرست</button>
-                                        <button id="mic-btn" class="mic-button" ${Engine.state.micPermission !== 'granted' ? 'disabled' : ''}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                                        <button class="interactive-submit" id="submit-btn">ثبت</button>
+                                        <button class="mic-button" id="mic-btn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
                                         </button>
                                     </div>
-                                </div>`;
+                                </div>
+                            </div>`;
                 }
                 this._setContent(html).then(() => this.setupStageListeners(type));
             },
             
             setupStageListeners(type) {
+                const submitBtn = document.getElementById('submit-btn');
+                const textInput = document.getElementById('text-input');
+                const micBtn = document.getElementById('mic-btn');
+
                 if (type === 'question') {
                     document.querySelectorAll('.interactive-button').forEach(btn => {
-                        btn.onclick = () => Engine.processUserInput({ type: type, choice: btn.innerText, collapse: parseFloat(btn.dataset.collapse) });
+                        btn.onclick = () => Engine.processUserInput({ type: type, choice: btn.innerText, collapse: parseInt(btn.dataset.collapse || 1) });
                     });
-                } else if (type === 'stroop_test') {
-                    const container = document.querySelector('[data-stage-type="stroop_test"]');
-                    const correctAnswer = container.dataset.correct;
-                    document.querySelectorAll('.color-swatch').forEach(swatch => {
-                        swatch.onclick = () => {
-                            const isCorrect = swatch.dataset.choice === correctAnswer;
-                            Engine.processUserInput({ type: type, choice: swatch.dataset.choice, collapse: isCorrect ? 0.5 : 4.0 });
-                        };
+                } else if (type === 'color_game') {
+                     document.querySelectorAll('.color-swatch').forEach(swatch => {
+                        swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseInt(swatch.dataset.collapse || 1) });
                     });
-                } else if (type === 'image_generation_test' || type.includes('association') || type.includes('dilemma') || type.includes('corruption')) {
-                     const submitBtn = document.getElementById('submit-btn');
-                     const textInput = document.getElementById('text-input');
-                     const micBtn = document.getElementById('mic-btn');
+                } else if (submitBtn && textInput) {
+                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 5) }); };
+                    submitBtn.onclick = action;
+                    textInput.onkeydown = e => { if (e.key === 'Enter') action(); };
+                }
 
-                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 10) }); };
-                    if (submitBtn) submitBtn.onclick = action;
-                    if (textInput) textInput.onkeydown = e => { if (e.key === 'Enter') action(); };
-                    if (micBtn && Engine.state.micPermission === 'granted') micBtn.onclick = () => Voice.listen();
+                if (micBtn) {
+                    micBtn.onclick = () => Voice.requestAndListen();
                 }
             }
         };
 
         // ===================================================================================
-        // VOICE, AI, VISUALS, AUDIO MODULES
+        // VOICE MODULE: Handles Speech Recognition
         // ===================================================================================
-        const Voice = { /* ... unchanged from previous version, as it's now correctly controlled by Engine ... */ 
+        const Voice = {
             recognition: null,
             isSupported: ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window),
+            permissionState: 'prompt',
+
+            init() {
+                if (!this.isSupported) {
+                    console.warn("Speech recognition not supported.");
+                    return;
+                }
+                navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+                    this.permissionState = permissionStatus.state;
+                    permissionStatus.onchange = () => { this.permissionState = permissionStatus.state; };
+                });
+            },
+
+            async requestAndListen() {
+                const micBtn = document.getElementById('mic-btn');
+                const textInput = document.getElementById('text-input');
+                if(micBtn) micBtn.disabled = true;
+
+                if (this.permissionState === 'denied') {
+                    if (textInput) textInput.placeholder = "دسترسی به میکروفون مسدود است.";
+                    if(micBtn) micBtn.disabled = false;
+                    return;
+                }
+                
+                try {
+                    if (this.permissionState === 'prompt') {
+                        await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.permissionState = 'granted';
+                    }
+                    this.listen();
+                } catch (err) {
+                    console.error("Microphone permission denied by user.", err);
+                    this.permissionState = 'denied';
+                    if (textInput) textInput.placeholder = "دسترسی لازم است.";
+                } finally {
+                     if(micBtn) micBtn.disabled = false;
+                }
+            },
 
             listen() {
-                if (!this.isSupported || Engine.state.micPermission !== 'granted') return;
-                
+                if (!this.isSupported || this.permissionState !== 'granted') return;
                 if (this.recognition && this.recognition.abort) this.recognition.abort();
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -353,14 +374,14 @@
                 const textInput = document.getElementById('text-input');
                 let final_transcript = '';
 
-                this.recognition.onstart = () => { micBtn.classList.add('is-listening'); textInput.placeholder = 'دارم گوش میدم...'; };
+                this.recognition.onstart = () => { micBtn.classList.add('is-listening'); textInput.placeholder = 'در حال شنیدن...'; };
                 this.recognition.onend = () => {
                     micBtn.classList.remove('is-listening');
                     if (final_transcript.trim()) {
                         const stageTypeElement = document.querySelector('[data-stage-type]');
                         const stageType = stageTypeElement ? stageTypeElement.dataset.stageType : 'voice_input';
                         Engine.processUserInput({ type: stageType, choice: final_transcript });
-                    } else { textInput.placeholder = 'جوابتو بنویس...'; }
+                    } else { textInput.placeholder = 'پاسخ تو...'; }
                 };
                 this.recognition.onerror = (event) => { console.error('Voice recognition error:', event.error); textInput.placeholder = `خطا: ${event.error}`; };
                 this.recognition.onresult = (event) => {
@@ -376,139 +397,158 @@
             }
         };
 
+        // ===================================================================================
+        // AI, VISUALS, AUDIO MODULES
+        // ===================================================================================
         const AI = {
-            apiKey: "", // Leave empty, it will be handled by the environment
-
-            async _queryGemini(prompt) {
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
-                
-                try {
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    const result = await response.json();
-                    
-                    if (result.promptFeedback && result.promptFeedback.blockReason) {
-                        throw new NonRetryableError(`درخواست توسط API بلاک شد: ${result.promptFeedback.blockReason}`);
-                    }
-                    const text = result.candidates[0].content.parts[0].text;
-                    return JSON.parse(text.replace(/```json|```/g, '').trim());
-                } catch (error) {
-                    console.error("Gemini Query Error:", error);
-                    if (error instanceof NonRetryableError) throw error;
-                    throw new Error("پاسخ نامعتبر از Gemini.");
-                }
+            async _fetchWithTimeout(resource, options = {}, timeout = 15000) {
+                 const controller = new AbortController();
+                 const id = setTimeout(() => controller.abort(), timeout);
+                 const response = await fetch(resource, { ...options, signal: controller.signal });
+                 clearTimeout(id);
+                 return response;
             },
-
-            async generateImage(profile) {
-                const imagePromptGenerator = `یک پرامپت کوتاه (حدود ۱۰ تا ۱۵ کلمه) برای ساختن یک تصویر سورئال، وهم‌آور و روانشناختی به زبان انگلیسی بساز. این تصویر باید حسی از تنهایی، راز یا اضطراب را القا کند. فقط خود پرامپت را به عنوان خروجی بده. مثال: "a single red chair in an empty, decaying grand ballroom, dust floating in a single sunbeam"`;
-                 const imagePromptPayload = { contents: [{ role: "user", parts: [{ text: imagePromptGenerator }] }] };
-                 const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
+            
+            /**
+             * @description متد اصلی برای ارسال درخواست به Gemini API با منطق تلاش مجدد هوشمند.
+             * @param {string} prompt - پرامپت برای ارسال به مدل.
+             * @param {number} retries - تعداد تلاش‌های باقی‌مانده.
+             * @param {number} backoff - زمان انتظار (به میلی‌ثانیه) قبل از تلاش بعدی.
+             * @returns {Promise<Object>} - پاسخ JSON از API.
+             */
+            async _query(prompt, retries = 3, backoff = 2000) {
+                const apiKey = 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724'; // <-- کلید شما دست‌نخورده باقی مانده
+                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 
-                const promptResponse = await fetch(geminiApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(imagePromptPayload) });
-                const promptResult = await promptResponse.json();
-                const imagePrompt = promptResult.candidates[0].content.parts[0].text.trim();
-
-                const payload = { instances: [{ prompt: imagePrompt }], parameters: { "sampleCount": 1 } };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${this.apiKey}`;
-
                 try {
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) throw new Error(`Imagen API Error: ${response.status}`);
-                    const result = await response.json();
-                    if (result.predictions && result.predictions[0].bytesBase64Encoded) {
-                         return {
-                            prompt: "به این تصویر نگاه کن. اولین کلمه‌ای که به ذهنت میاد چیه؟",
-                            imageUrl: `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`
-                        };
+                    const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    
+                    if (!response.ok) {
+                        // خطاهای 4xx (به‌جز 429) غیرقابل بازیابی هستند.
+                        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                            const errorBody = await response.json().catch(() => ({}));
+                            const errorMessage = errorBody?.error?.message || `خطای سمت سرویس گیرنده: ${response.status}`;
+                            throw new NonRetryableError(errorMessage);
+                        }
+                        // خطاهای دیگر (مانند 5xx) باعث تلاش مجدد می‌شوند.
+                        throw new Error(`خطای API: ${response.status}`);
                     }
-                    throw new Error("پاسخ نامعتبر از Imagen.");
+                    
+                    const result = await response.json();
+                    if (result.candidates?.[0]?.content?.parts?.[0]) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
+                        catch (e) { console.error("JSON نامعتبر از هوش مصنوعی:", text); throw new Error("پاسخ با فرمت نامعتبر از طنین."); }
+                    } else if (result.error) {
+                        // اگر خود API خطایی را برگرداند، آن را بررسی می‌کنیم.
+                        if (result.error.message.includes("API key not valid")) {
+                             throw new NonRetryableError(result.error.message);
+                        }
+                        throw new Error(result.error.message);
+                    }
+                    else { throw new Error("ساختار پاسخ غیرمنتظره."); }
                 } catch (error) {
-                    console.error("Imagen API Error:", error);
-                    throw error;
+                    console.error(`تلاش ناموفق بود: ${error.message}. تعداد تلاش‌های باقی‌مانده: ${retries}`);
+                    // اگر خطا از نوع غیرقابل بازیابی بود یا تلاش‌ها تمام شده بود، آن را به Engine ارسال کن.
+                    if (error instanceof NonRetryableError || retries <= 0) {
+                        throw error;
+                    }
+                    
+                    // صبر کن و دوباره تلاش کن
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return this._query(prompt, retries - 1, backoff * 2); // افزایش زمان انتظار برای تلاش بعدی
                 }
             },
 
             async generateStage(type, profile) {
                 let prompt;
-                const personality = profile.personality;
                 switch (type) {
                     case 'question':
-                        prompt = `یه سوال دو گزینه‌ای بساز که آدمو تو فشار بذاره. موضوعش یه چیزی مثل انتخاب بین دوتا بدبختی باشه. لحنت ${personality} باشه. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "گزینه ۱", "collapse": امتیاز}, {"text": "گزینه ۲", "collapse": امتیاز}]}`;
+                        prompt = `یک سوال دو گزینه‌ای فلسفی با لحن کوچه‌بازاری و تهاجمی طراحی کن. موضوعات: انتخاب بین بد و بدتر، حقیقت تلخ یا دروغ شیرین. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "متن گزینه", "collapse": امتیاز}]}`;
                         break;
-                    case 'stroop_test':
-                        prompt = `یه بازی روانی "استروپ" بساز. یه کلمه که اسم یه رنگه، با یه رنگ دیگه نمایش داده می‌شه. کاربر باید رنگی که کلمه باهاش نوشته شده رو انتخاب کنه. گیج کننده باشه. خروجی JSON: {"prompt": "کلمه‌ی زیر رو بخون و رنگش رو انتخاب کن، نه کلمه‌ رو", "word": "قرمز", "display_color": "blue", "choices": ["red", "blue", "green"], "correct_answer": "blue"}`;
+                    case 'color_game':
+                        prompt = `یک سوال انتزاعی بپرس که کاربر با یک رنگ پاسخ دهد. مثلا "رنگ «بغض» چیه؟". یک پالت ۶ تایی رنگ با معانی تاریک و امتیاز فروپاشی بده. خروجی JSON: {"prompt": "سوال", "colors": [{"hex": "#کدرنگ", "meaning": "معنی", "collapse": امتیاز}]}`;
                         break;
-                    case 'vibration_event':
-                        prompt = `یه جمله خیلی کوتاه و نگران‌کننده برای یه رویداد شوکه‌کننده (لرزش) بساز. خروجی JSON: {"prompt": "صبر کن... یه چیزی درست نیست."}`;
+                    case 'number_game':
+                         prompt = `یک سوال روانشناختی بپرس که پاسخش یک عدد باشد. با لحن بی‌رحم. مثال: "چند نفر رو باید قربانی کنی تا خودت زنده بمونی؟". خروجی JSON: {"prompt": "سوال"}`;
+                         break;
+                    case 'memory_corruption':
+                        const targetChoice = profile.choices.length > 0 ? profile.choices[Math.floor(Math.random() * profile.choices.length)] : { choice: "سکوت" };
+                        prompt = `پاسخ قبلی کاربر "${targetChoice.choice}" بوده. اینو تحریف کن و ازش بپرس چرا اینو گفته. مثال: اگر گفته "امید"، بپرس "یادمه میگفتی امید یه جور خودفریبیه. چرا؟". سوال باید کاربر رو به حافظه‌ش شکاک کنه. خروجی JSON: {"prompt": "سوال تحریف شده"}`;
                         break;
-                    default: // word_association, moral_dilemma, etc.
-                        prompt = `یه سوال عمیق یا یه دوراهی اخلاقی با لحن ${personality} بساز که جوابش متنی باشه. یه کلمه‌ی کلیدی مثل "انتقام"، "قدرت" یا "فراموشی" توش باشه. خروجی JSON: {"prompt": "متن سوال"}`;
+                    case 'rorschach_test':
+                        prompt = `یک سوال مرموز بپرس. "توی این لکه چی می‌بینی؟ چیزی که ازش فرار می‌کنی یا چیزی که دنبالشی؟". خروجی JSON: {"prompt": "سوال"}`;
+                        break;
+                    default:
+                        prompt = `یک سوال "تداعی کلمات" با کلمه‌ای مثل «انتقام» یا «تنهایی» بپرس. خروجی JSON: {"prompt": "اولین کلمه‌ای که با شنیدن «انتقام» میاد تو ذهنت چیه؟"}`;
                 }
-                return this._queryGemini(prompt);
+                return this._query(prompt);
             },
             
-            async generateFeedback(lastInput, personality) {
-                const prompt = `رفیقت به این جواب رسیده: "${lastInput.choice}". با لحن ${personality} یه تیکه‌ی کوتاه و خودمونی بهش بنداز که به فکر فرو بره. انگار داری مچشو می‌گیری. مثال: "هه! فکر کردی با این جواب چیزی عوض میشه؟". خروجی JSON: {"comment": "تیکه‌ی تو"}`;
-                return this._queryGemini(prompt);
+            async generateFeedback(lastInput) {
+                const prompt = `کاربر به این انتخاب رسیده: "${lastInput.choice}". با لحنی کوچه‌بازاری، روانشناسانه و تهاجمی، یک جمله کوتاه و نیش‌دار بگو که انتخابش رو به چالش بکشه. انگار که داری از بالا بهش نگاه می‌کنی. مثال: "جدی فکر کردی این بهترین جوابت بود؟". خروجی JSON: {"comment": "جمله نیش‌دار تو"}`;
+                return this._query(prompt);
             }
         };
-
-        const Visuals = { /* ... unchanged ... */ 
-            bgElement: null, ctx: null, canvas: null, width: 0, height: 0, particles: [],
-            init() {
-                this.bgElement = document.getElementById('background-image');
-                this.canvas = document.getElementById('particle-overlay');
-                this.ctx = this.canvas.getContext('2d');
-                this.resize();
-                window.addEventListener('resize', () => this.resize(), false);
-                for(let i = 0; i < 50; i++) {
-                    this.particles.push({
-                        x: Math.random() * this.width, y: Math.random() * this.height,
-                        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-                        radius: Math.random() * 1.5 + 0.5,
-                    });
+        const Visuals = {
+            ctx: document.getElementById('visual-engine').getContext('2d'),
+            width: 0, height: 0, rorschachPoints: [], time: 0,
+            init() { this.resize(); window.addEventListener('resize', () => this.resize(), false); this.loop(); },
+            resize() { this.width = this.ctx.canvas.width = window.innerWidth; this.height = this.ctx.canvas.height = window.innerHeight; },
+            update(distortion) { if (distortion > 10 && Math.random() > 0.7) this.glitch(); },
+            drawRorschach() {
+                this.rorschachPoints = [];
+                const centerX = this.width / 2;
+                const centerY = this.height / 2;
+                const points = 40 + Math.random() * 60;
+                const radius = this.width / 8 + Math.random() * 50;
+                for (let i = 0; i < points; i++) {
+                    const angle = Math.random() * Math.PI;
+                    const r = Math.pow(Math.random(), 2) * radius;
+                    this.rorschachPoints.push({ x: centerX + Math.cos(angle) * r, y: centerY + Math.sin(angle) * r });
                 }
-                this.loop();
             },
-            resize() { this.width = this.canvas.width = window.innerWidth; this.height = this.canvas.height = window.innerHeight; },
-            update(distortion) {
-                const blur = Math.min(20, 2 + distortion * 1.2);
-                const brightness = Math.max(0.2, 0.6 - distortion * 0.04);
-                const scale = 1 + distortion * 0.015;
-                const saturate = Math.max(0.5, 1 - distortion * 0.05);
-                this.bgElement.style.filter = `blur(${blur}px) brightness(${brightness}) saturate(${saturate})`;
-                this.bgElement.style.transform = `scale(${scale})`;
+            glitch() {
+                const canvas = this.ctx.canvas;
+                const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
+                this.ctx.putImageData(imageData, (Math.random() * 30 - 15), 0);
+                this.ctx.drawImage(canvas, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20);
             },
             loop() {
-                this.ctx.clearRect(0, 0, this.width, this.height);
-                this.ctx.fillStyle = 'rgba(200, 210, 220, 0.3)';
-                for(const p of this.particles) {
-                    p.x += p.vx; p.y += p.vy;
-                    if(p.x < 0 || p.x > this.width) p.vx *= -1;
-                    if(p.y < 0 || p.y > this.height) p.vy *= -1;
-                    this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); this.ctx.fill();
+                this.ctx.globalCompositeOperation = 'source-over';
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                if (this.rorschachPoints.length > 0) {
+                     this.ctx.fillStyle = 'rgba(200, 200, 200, 0.8)';
+                     this.rorschachPoints.forEach(p => {
+                         this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); this.ctx.fill();
+                         const mirroredX = this.width - p.x;
+                         this.ctx.beginPath(); this.ctx.arc(mirroredX, p.y, 2, 0, Math.PI * 2); this.ctx.fill();
+                     });
+                     if (Math.random() > 0.95) this.rorschachPoints.shift();
                 }
                 requestAnimationFrame(() => this.loop());
             }
         };
-        const Audio = { /* ... unchanged ... */ 
+        const Audio = {
             isSetup: false,
             init() {
                 if (this.isSetup) return;
-                this.reverb = new Tone.Reverb({ decay: 10, wet: 0.7 }).toDestination();
-                this.wind = new Tone.Noise("brown").connect(
-                    new Tone.AutoFilter({ frequency: "16m", baseFrequency: 80, octaves: 5 }).connect(this.reverb)
+                this.reverb = new Tone.Reverb({ decay: 8, wet: 0.6 }).toDestination();
+                this.wind = new Tone.Noise("pink").connect(
+                    new Tone.AutoFilter({ frequency: "8m", baseFrequency: 100, octaves: 4 }).connect(this.reverb)
                 );
-                this.wind.volume.value = -30;
+                this.wind.volume.value = -25;
                 this.wind.start();
                 this.isSetup = true;
             },
             update(distortion) {
                 if (!this.isSetup) return;
-                const newVolume = -30 + (distortion * 1.2);
-                this.wind.volume.rampTo(Math.min(-12, newVolume), 4);
-                this.reverb.wet.rampTo(Math.min(0.9, 0.7 + distortion * 0.02), 4);
+                const newVolume = -25 + (distortion * 1.5);
+                this.wind.volume.rampTo(Math.min(-10, newVolume), 3);
             }
         };
 
@@ -517,4 +557,3 @@
     </script>
 </body>
 </html>
-
