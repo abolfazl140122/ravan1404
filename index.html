@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #d32f2f;
+            --primary-color: #c62828;
             --background-color: #000;
             --text-color: #b0bec5;
         }
@@ -23,43 +23,69 @@
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
         }
+        /* New Background Image Styling */
+        #background-image {
+            position: fixed;
+            top: -5%; left: -5%; /* Overscan to prevent edges on zoom */
+            width: 110%; height: 110%;
+            background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            transition: filter 4s ease-in-out, transform 4s ease-in-out;
+            filter: blur(2px) brightness(0.7);
+            transform: scale(1);
+        }
+        #particle-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 2;
+            pointer-events: none; /* Make sure it doesn't block UI */
+        }
         #ui-layer { z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; padding: 1rem; color: var(--text-color); }
-        #content-wrapper { width: 95%; max-width: 800px; }
+        #content-wrapper { width: 95%; max-width: 800px; z-index: 11; }
         #cursor-follower {
-            position: fixed; width: 20px; height: 20px;
-            border-radius: 50%; border: 2px solid var(--text-color);
-            pointer-events: none; z-index: 9999; mix-blend-mode: exclusion;
+            position: fixed; width: 22px; height: 22px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.8);
+            pointer-events: none; z-index: 9999; mix-blend-mode: difference;
             transition: transform 0.1s ease-out, opacity 0.3s ease;
             will-change: transform; opacity: 0;
         }
-        @keyframes fadeIn { from { opacity: 0; filter: blur(5px); transform: scale(0.95); } to { opacity: 1; filter: blur(0); transform: scale(1); } }
-        @keyframes fadeOut { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(5px); } }
+        @keyframes fadeIn { from { opacity: 0; filter: blur(10px); transform: translateY(20px) scale(0.98); } to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); } }
+        @keyframes fadeOut { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(10px); transform: scale(0.98); } }
         .interactive-button, .interactive-submit, .mic-button {
-            background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);
-            padding: 10px 20px; font-size: 1.1rem; transition: all 0.2s; margin: 5px;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+            border: 1px solid var(--primary-color); color: var(--primary-color);
+            padding: 12px 24px; font-size: 1.1rem; transition: all 0.2s; margin: 8px;
             display: inline-flex; align-items: center; justify-content: center;
         }
-        .interactive-button:hover:not(:disabled), .interactive-submit:hover, .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 20px var(--primary-color); transform: scale(1.05); }
-        .interactive-button:disabled, .mic-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .interactive-button:hover:not(:disabled), .interactive-submit:hover, .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 25px var(--primary-color); transform: translateY(-2px) scale(1.05); }
+        .interactive-button:disabled, .mic-button:disabled { opacity: 0.4; cursor: not-allowed; }
         .mic-button.is-listening {
             background: var(--primary-color); color: var(--background-color);
             animation: pulse 1.5s infinite;
         }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(211, 47, 47, 0); } 100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(198, 40, 40, 0); } 100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); } }
         .interactive-input {
             background: transparent; color: #fff; border: none; border-bottom: 2px solid var(--text-color);
-            text-align: center; width: 80%; max-width: 450px; font-size: 2rem; padding: 5px;
+            text-align: center; width: 80%; max-width: 450px; font-size: 2rem; padding: 10px;
         }
         .interactive-input:focus { outline: none; border-color: var(--primary-color); }
         .color-palette { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 2rem; }
-        .color-swatch { width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; transition: all 0.2s; }
+        .color-swatch { width: 60px; height: 60px; border-radius: 50%; border: 3px solid transparent; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: pointer; }
         .color-swatch:hover { transform: scale(1.15); border-color: #fff; }
-        #feedback-text { font-size: 1.5rem; font-style: italic; color: #64b5f6; text-shadow: 0 0 10px #64b5f6; }
+        #feedback-text { font-size: 1.8rem; font-weight: 700; text-shadow: 0 0 15px #64b5f6; }
     </style>
 </head>
 <body>
     <div id="app-container">
-        <canvas id="visual-engine"></canvas>
+        <!-- Visual engine now contains the background image and a particle canvas -->
+        <div id="visual-engine">
+            <div id="background-image"></div>
+            <canvas id="particle-overlay"></canvas>
+        </div>
         <div id="ui-layer"><div id="content-wrapper"></div></div>
     </div>
     <div id="cursor-follower"></div>
@@ -68,10 +94,6 @@
         // ===================================================================================
         // UTILITIES & CUSTOM ERRORS
         // ===================================================================================
-        /**
-         * @description کلاس خطای سفارشی برای خطاهایی که نباید دوباره تلاش شوند.
-         * این خطاها معمولاً خطاهای سمت کاربر هستند (مانند کلید API نامعتبر).
-         */
         class NonRetryableError extends Error {
             constructor(message) {
                 super(message);
@@ -85,31 +107,47 @@
         const Engine = {
             state: {
                 currentFlow: 'intro',
-                distortion: 0,
-                userProfile: { name: 'مسافر', choices: [] },
+                distortion: 0.0,
+                userProfile: { name: 'مسافر', choices: [], personality: 'تهاجمی' },
                 lastInput: null,
                 isAudioReady: false,
+                micPermission: 'prompt', // 'prompt', 'granted', 'denied'
             },
 
             init() {
                 UI.init();
                 Visuals.init();
-                Voice.init();
+                Voice.init(); // Voice module is initialized but doesn't request permission yet
                 UI.renderIntro();
             },
 
             async primeAudioAndStart() {
+                // Step 1: Start Tone.js audio context
                 try {
                     if (!this.state.isAudioReady) {
                         await Tone.start();
                         Audio.init();
                         this.state.isAudioReady = true;
                     }
-                    this.startExperience();
                 } catch(e) {
                     console.error("Audio Context Failed To Start:", e);
-                    UI.renderError("خطا در زمینه صوتی. بازی بدون صدا ادامه می‌یابد.");
-                    setTimeout(() => this.startExperience(), 2000);
+                    // Non-critical error, the game can continue without sound
+                }
+                
+                // Step 2: Request microphone permission
+                UI.renderLoader("در انتظار اجازه‌ی تو برای شنیدن صدایت...");
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop()); // We don't need the stream now, just the permission
+                    this.state.micPermission = 'granted';
+                    console.log("Microphone access granted.");
+                    this.startExperience();
+                } catch (err) {
+                    console.error("Microphone permission denied by user.", err);
+                    this.state.micPermission = 'denied';
+                    // The experience starts even if permission is denied.
+                    UI.renderLoader("دسترسی به میکروفون رد شد. تجربه ادامه می‌یابد...");
+                    setTimeout(() => this.startExperience(), 2500);
                 }
             },
 
@@ -128,11 +166,7 @@
                             if (!stageData) throw new Error("AI returned no data");
                             this.transitionTo('stage', { type: stageType, data: stageData });
                         } catch (e) {
-                            if (e instanceof NonRetryableError) {
-                                this.handleAIFatalError(e);
-                            } else {
-                                this.handleAITemporaryFailure(() => this.transitionTo('loading_stage', context));
-                            }
+                            this.handleAIError(e, () => this.transitionTo('loading_stage', context));
                         }
                         break;
                     case 'stage':
@@ -141,66 +175,51 @@
                     case 'loading_feedback':
                         await UI.renderLoader("در حال تحلیل پاسخ تو...");
                         try {
-                            const feedbackData = await AI.generateFeedback(this.state.lastInput);
+                            const feedbackData = await AI.generateFeedback(this.state.lastInput, this.state.userProfile.personality);
                             if (!feedbackData) throw new Error("AI returned no feedback");
                             this.transitionTo('feedback', { data: feedbackData });
                         } catch (e) {
-                            if (e instanceof NonRetryableError) {
-                                this.handleAIFatalError(e);
-                            } else {
-                                this.handleAITemporaryFailure(() => this.transitionTo('loading_feedback', context));
-                            }
+                            this.handleAIError(e, () => this.transitionTo('loading_feedback', context));
                         }
                         break;
                     case 'feedback':
                         await UI.renderFeedback(context.data.comment);
-                        setTimeout(() => this.transitionTo('loading_stage'), 5000);
+                        setTimeout(() => this.transitionTo('loading_stage'), 6000);
                         break;
                     default:
-                        console.error("Unknown flow state:", flowState);
-                        this.handleAIFatalError(new Error("Unknown flow state"));
+                        this.handleAIError(new Error("Unknown flow state"), () => this.startExperience());
                 }
             },
             
             determineNextStage() {
-                const stages = ['question', 'color_game', 'number_game', 'word_association', 'moral_dilemma'];
-                if (this.state.distortion > 5) stages.push('rorschach_test');
-                if (this.state.distortion > 10 && this.state.userProfile.choices.length > 2) {
+                const stages = ['question', 'color_game', 'word_association', 'moral_dilemma'];
+                if (this.state.distortion > 4) stages.push('void_stare');
+                if (this.state.distortion > 8 && this.state.userProfile.choices.length > 2) {
                     stages.push('memory_corruption');
                 }
                 return stages[Math.floor(Math.random() * stages.length)];
             },
             
-            /**
-             * @description مدیریت خطاهای موقت (مثلاً شبکه). یک پیام به کاربر نشان داده و پس از تاخیر، عملیات را مجدداً امتحان می‌کند.
-             * @param {Function} retryFunction - تابعی که باید پس از تاخیر اجرا شود.
-             * @param {string} message - پیامی که به کاربر نمایش داده می‌شود.
-             */
-            handleAITemporaryFailure(retryFunction, message = "ارتباط با طنین ناپایدار است. در حال تلاش برای اتصال مجدد...") {
-                console.warn("Temporary AI failure. Retrying in 7 seconds.");
-                UI.renderLoader(message);
-                setTimeout(() => {
-                    retryFunction();
-                }, 7000); // تاخیر ۷ ثانیه‌ای برای بازیابی
-            },
-
-            /**
-             * @description مدیریت خطاهای دائمی (غیرقابل بازیابی). یک پیام نهایی به کاربر نمایش داده و جریان بازی را متوقف می‌کند.
-             * @param {Error} error - شیء خطا.
-             */
-            handleAIFatalError(error) {
-                console.error("Entity Communication Failed and will not be retried:", error);
-                let userMessage = "ارتباط با طنین به طور کامل قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.";
+            handleAIError(error, retryFunction) {
                 if (error instanceof NonRetryableError) {
-                    userMessage = `یک خطای غیرقابل بازیابی رخ داد: ${error.message}. لطفاً صفحه را رفرش کنید.`;
+                    console.error("Entity Communication Failed:", error);
+                    UI.renderError(`ارتباط با طنین قطع شد: ${error.message}.`);
+                } else {
+                    console.warn("Temporary AI failure. Retrying...", error);
+                    UI.renderLoader("ارتباط با طنین ناپایدار است. در حال تلاش مجدد...");
+                    setTimeout(retryFunction, 7000);
                 }
-                UI.renderError(userMessage);
             },
 
             processUserInput(inputData) {
                 this.state.lastInput = inputData;
                 this.state.userProfile.choices.push(inputData);
-                this.state.distortion += inputData.collapse || 1;
+                
+                const collapseAmount = inputData.collapse || 1.0;
+                this.state.distortion += collapseAmount;
+                if (this.state.distortion > 15) this.state.userProfile.personality = 'آشفته';
+                else if (this.state.distortion > 8) this.state.userProfile.personality = 'بی‌رحم';
+
                 Visuals.update(this.state.distortion);
                 if (this.state.isAudioReady) Audio.update(this.state.distortion);
                 this.transitionTo('loading_feedback');
@@ -226,10 +245,10 @@
             _setContent(html, anim = 'fadeIn') {
                 return new Promise(res => {
                     const wrapper = document.getElementById('content-wrapper');
-                    wrapper.style.animation = 'fadeOut 0.5s forwards';
+                    wrapper.style.animation = 'fadeOut 0.5s forwards ease-in-out';
                     setTimeout(() => {
                         wrapper.innerHTML = html;
-                        wrapper.style.animation = `${anim} 1s forwards`;
+                        wrapper.style.animation = `${anim} 1s forwards ease-in-out`;
                         res();
                     }, 500);
                 });
@@ -237,16 +256,16 @@
             
             renderIntro() {
                this._setContent(`
-                    <h1 class="text-6xl font-black">خلسه</h1>
-                    <p class="mt-4 text-gray-500">یک هم‌صحبت، در انتظار توست.</p>
+                    <h1 class="text-6xl md:text-7xl font-black text-white" style="text-shadow: 0 0 15px rgba(255,255,255,0.3);">خلسه</h1>
+                    <p class="mt-4 text-gray-400 text-xl">طنینِ یک ذهن، در انتظارِ پژواکِ توست.</p>
                     <button id="start-btn" class="interactive-button mt-8">آغاز کن</button>
                 `).then(() => {
                     document.getElementById('start-btn').onclick = () => Engine.primeAudioAndStart();
                 });
             },
             renderLoader(text) { return this._setContent(`<p class="text-2xl text-gray-400">${text}</p>`); },
-            renderError(msg) { return this._setContent(`<p class="text-2xl text-red-500">${msg}</p>`); },
-            renderFeedback(comment) { return this._setContent(`<p id="feedback-text">"${comment}"</p>`); },
+            renderError(msg) { return this._setContent(`<p class="text-2xl text-red-400">${msg}</p>`); },
+            renderFeedback(comment) { return this._setContent(`<p id="feedback-text" class="text-blue-300">"${comment}"</p>`); },
             renderStage(type, data) {
                 let html = '';
                 let hasTextInput = false;
@@ -257,12 +276,10 @@
                     case 'color_game':
                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div class="color-palette" data-stage-type="${type}">${data.colors.map(c => `<div class="color-swatch" style="background-color: ${c.hex};" data-collapse="${c.collapse}" data-meaning="${c.meaning}"></div>`).join('')}</div>`;
                         break;
-                    case 'rorschach_test':
-                        Visuals.drawRorschach();
-                        hasTextInput = true;
+                    case 'void_stare':
+                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div data-stage-type="${type}"><button id="void-btn" class="interactive-button">دیگر بس است</button></div>`;
                         break;
                     case 'memory_corruption':
-                    case 'number_game':
                     case 'word_association':
                     case 'moral_dilemma':
                         hasTextInput = true;
@@ -273,14 +290,13 @@
                 }
                 
                 if (hasTextInput) {
-                    const promptText = data.prompt || "لطفاً پاسخ دهید...";
                     html = `<div data-stage-type="${type}">
-                                <p class="text-2xl md:text-3xl mb-8">${promptText}</p>
+                                <p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
                                 <div class="flex flex-col items-center gap-4">
                                     <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
                                     <div class="flex items-center gap-4 mt-4">
                                         <button class="interactive-submit" id="submit-btn">ثبت</button>
-                                        <button class="mic-button" id="mic-btn">
+                                        <button class="mic-button" id="mic-btn" ${Engine.state.micPermission !== 'granted' ? 'disabled' : ''}>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
                                         </button>
                                     </div>
@@ -291,26 +307,35 @@
             },
             
             setupStageListeners(type) {
+                // ... (Listener logic is largely the same, but mic button is now handled correctly)
                 const submitBtn = document.getElementById('submit-btn');
                 const textInput = document.getElementById('text-input');
                 const micBtn = document.getElementById('mic-btn');
 
                 if (type === 'question') {
                     document.querySelectorAll('.interactive-button').forEach(btn => {
-                        btn.onclick = () => Engine.processUserInput({ type: type, choice: btn.innerText, collapse: parseInt(btn.dataset.collapse || 1) });
+                        btn.onclick = () => Engine.processUserInput({ type: type, choice: btn.innerText, collapse: parseFloat(btn.dataset.collapse || 1) });
                     });
                 } else if (type === 'color_game') {
                      document.querySelectorAll('.color-swatch').forEach(swatch => {
-                        swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseInt(swatch.dataset.collapse || 1) });
+                        swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseFloat(swatch.dataset.collapse || 1) });
                     });
+                } else if (type === 'void_stare') {
+                     document.getElementById('void-btn').onclick = () => {
+                        const duration = (Date.now() - Engine.state.stageStartTime) / 1000;
+                        const collapse = Math.min(5, Math.max(0.5, duration / 5));
+                        Engine.processUserInput({ type: type, choice: `${duration.toFixed(1)} ثانیه`, collapse: collapse });
+                    };
                 } else if (submitBtn && textInput) {
-                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 5) }); };
+                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 10) }); };
                     submitBtn.onclick = action;
                     textInput.onkeydown = e => { if (e.key === 'Enter') action(); };
                 }
 
-                if (micBtn) {
-                    micBtn.onclick = () => Voice.requestAndListen();
+                if (micBtn && Engine.state.micPermission === 'granted') {
+                    micBtn.onclick = () => Voice.listen();
+                } else if (micBtn) {
+                    micBtn.title = "دسترسی به میکروفون داده نشده است.";
                 }
             }
         };
@@ -321,47 +346,18 @@
         const Voice = {
             recognition: null,
             isSupported: ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window),
-            permissionState: 'prompt',
 
             init() {
                 if (!this.isSupported) {
                     console.warn("Speech recognition not supported.");
                     return;
                 }
-                navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
-                    this.permissionState = permissionStatus.state;
-                    permissionStatus.onchange = () => { this.permissionState = permissionStatus.state; };
-                });
-            },
-
-            async requestAndListen() {
-                const micBtn = document.getElementById('mic-btn');
-                const textInput = document.getElementById('text-input');
-                if(micBtn) micBtn.disabled = true;
-
-                if (this.permissionState === 'denied') {
-                    if (textInput) textInput.placeholder = "دسترسی به میکروفون مسدود است.";
-                    if(micBtn) micBtn.disabled = false;
-                    return;
-                }
-                
-                try {
-                    if (this.permissionState === 'prompt') {
-                        await navigator.mediaDevices.getUserMedia({ audio: true });
-                        this.permissionState = 'granted';
-                    }
-                    this.listen();
-                } catch (err) {
-                    console.error("Microphone permission denied by user.", err);
-                    this.permissionState = 'denied';
-                    if (textInput) textInput.placeholder = "دسترسی لازم است.";
-                } finally {
-                     if(micBtn) micBtn.disabled = false;
-                }
+                // Don't do anything here, permission is handled by the Engine
             },
 
             listen() {
-                if (!this.isSupported || this.permissionState !== 'granted') return;
+                if (!this.isSupported || Engine.state.micPermission !== 'granted') return;
+                
                 if (this.recognition && this.recognition.abort) this.recognition.abort();
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -401,7 +397,10 @@
         // AI, VISUALS, AUDIO MODULES
         // ===================================================================================
         const AI = {
-            async _fetchWithTimeout(resource, options = {}, timeout = 15000) {
+             // ... (AI logic remains the same)
+            apiKey: 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724',
+
+            async _fetchWithTimeout(resource, options = {}, timeout = 20000) {
                  const controller = new AbortController();
                  const id = setTimeout(() => controller.abort(), timeout);
                  const response = await fetch(resource, { ...options, signal: controller.signal });
@@ -409,30 +408,20 @@
                  return response;
             },
             
-            /**
-             * @description متد اصلی برای ارسال درخواست به Gemini API با منطق تلاش مجدد هوشمند.
-             * @param {string} prompt - پرامپت برای ارسال به مدل.
-             * @param {number} retries - تعداد تلاش‌های باقی‌مانده.
-             * @param {number} backoff - زمان انتظار (به میلی‌ثانیه) قبل از تلاش بعدی.
-             * @returns {Promise<Object>} - پاسخ JSON از API.
-             */
             async _query(prompt, retries = 3, backoff = 2000) {
-                const apiKey = 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724'; // <-- کلید شما دست‌نخورده باقی مانده
                 const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
                 
                 try {
                     const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     
                     if (!response.ok) {
-                        // خطاهای 4xx (به‌جز 429) غیرقابل بازیابی هستند.
                         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
                             const errorBody = await response.json().catch(() => ({}));
                             const errorMessage = errorBody?.error?.message || `خطای سمت سرویس گیرنده: ${response.status}`;
                             throw new NonRetryableError(errorMessage);
                         }
-                        // خطاهای دیگر (مانند 5xx) باعث تلاش مجدد می‌شوند.
                         throw new Error(`خطای API: ${response.status}`);
                     }
                     
@@ -441,114 +430,122 @@
                         const text = result.candidates[0].content.parts[0].text;
                         try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
                         catch (e) { console.error("JSON نامعتبر از هوش مصنوعی:", text); throw new Error("پاسخ با فرمت نامعتبر از طنین."); }
-                    } else if (result.error) {
-                        // اگر خود API خطایی را برگرداند، آن را بررسی می‌کنیم.
-                        if (result.error.message.includes("API key not valid")) {
-                             throw new NonRetryableError(result.error.message);
-                        }
-                        throw new Error(result.error.message);
-                    }
-                    else { throw new Error("ساختار پاسخ غیرمنتظره."); }
+                    } else if (result.promptFeedback && result.promptFeedback.blockReason){
+                         throw new NonRetryableError(`درخواست توسط API مسدود شد: ${result.promptFeedback.blockReason}`);
+                    } else { throw new Error("ساختار پاسخ غیرمنتظره."); }
                 } catch (error) {
-                    console.error(`تلاش ناموفق بود: ${error.message}. تعداد تلاش‌های باقی‌مانده: ${retries}`);
-                    // اگر خطا از نوع غیرقابل بازیابی بود یا تلاش‌ها تمام شده بود، آن را به Engine ارسال کن.
-                    if (error instanceof NonRetryableError || retries <= 0) {
-                        throw error;
-                    }
-                    
-                    // صبر کن و دوباره تلاش کن
+                    if (error instanceof NonRetryableError || retries <= 0) { throw error; }
                     await new Promise(resolve => setTimeout(resolve, backoff));
-                    return this._query(prompt, retries - 1, backoff * 2); // افزایش زمان انتظار برای تلاش بعدی
+                    return this._query(prompt, retries - 1, backoff * 2);
                 }
             },
 
             async generateStage(type, profile) {
                 let prompt;
+                const previousChoices = profile.choices.map(c => c.choice).slice(-3).join(', ') || 'سکوت';
                 switch (type) {
                     case 'question':
-                        prompt = `یک سوال دو گزینه‌ای فلسفی با لحن کوچه‌بازاری و تهاجمی طراحی کن. موضوعات: انتخاب بین بد و بدتر، حقیقت تلخ یا دروغ شیرین. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "متن گزینه", "collapse": امتیاز}]}`;
+                        prompt = `با توجه به اینکه کاربر اخیراً انتخاب‌هایی مثل "${previousChoices}" داشته، یک سوال دو گزینه‌ای فلسفی با لحن روانشناسانه و ${profile.personality} طراحی کن. موضوعات: پوچی، اراده آزاد، معنای رنج. گزینه‌ها باید امتیاز فروپاشی (collapse) بین ۱ تا ۳ داشته باشند. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "متن گزینه", "collapse": امتیاز}]}`;
                         break;
                     case 'color_game':
-                        prompt = `یک سوال انتزاعی بپرس که کاربر با یک رنگ پاسخ دهد. مثلا "رنگ «بغض» چیه؟". یک پالت ۶ تایی رنگ با معانی تاریک و امتیاز فروپاشی بده. خروجی JSON: {"prompt": "سوال", "colors": [{"hex": "#کدرنگ", "meaning": "معنی", "collapse": امتیاز}]}`;
+                        prompt = `یک سوال انتزاعی بپرس که کاربر با یک رنگ پاسخ دهد. لحن ${profile.personality} باشد. مثلا "رنگ «حسرتی که فراموش نمیشه» چیه؟". یک پالت ۶ تایی رنگ با معانی عمیق و امتیاز فروپاشی (collapse) بین ۱ تا ۴ بده. خروجی JSON: {"prompt": "سوال", "colors": [{"hex": "#کدرنگ", "meaning": "معنی", "collapse": امتیاز}]}`;
                         break;
-                    case 'number_game':
-                         prompt = `یک سوال روانشناختی بپرس که پاسخش یک عدد باشد. با لحن بی‌رحم. مثال: "چند نفر رو باید قربانی کنی تا خودت زنده بمونی؟". خروجی JSON: {"prompt": "سوال"}`;
-                         break;
+                    case 'void_stare':
+                        prompt = `یک جمله کوتاه و وهم‌آور برای خیره شدن به یک فضای خالی بنویس. باید کاربر را به فکر فرو ببرد. مثال: "این پوچی به تو خیره شده. چه زمانی نگاهت را می‌دزدی؟". خروجی JSON: {"prompt": "متن سوال"}`;
+                        break;
                     case 'memory_corruption':
-                        const targetChoice = profile.choices.length > 0 ? profile.choices[Math.floor(Math.random() * profile.choices.length)] : { choice: "سکوت" };
-                        prompt = `پاسخ قبلی کاربر "${targetChoice.choice}" بوده. اینو تحریف کن و ازش بپرس چرا اینو گفته. مثال: اگر گفته "امید"، بپرس "یادمه میگفتی امید یه جور خودفریبیه. چرا؟". سوال باید کاربر رو به حافظه‌ش شکاک کنه. خروجی JSON: {"prompt": "سوال تحریف شده"}`;
+                        const targetChoice = profile.choices[Math.floor(Math.random() * profile.choices.length)];
+                        prompt = `پاسخ قبلی کاربر "${targetChoice.choice}" بوده. این خاطره رو تحریف کن و سوالی ${profile.personality} بپرس که حافظه‌اش رو زیر سوال ببره. مثال: اگر گفته "امید"، بپرس "یادمه می‌گفتی امید فقط یک دروغه برای ضعیف‌ها. هنوز بهش معتقدی؟". خروجی JSON: {"prompt": "سوال تحریف شده"}`;
                         break;
-                    case 'rorschach_test':
-                        prompt = `یک سوال مرموز بپرس. "توی این لکه چی می‌بینی؟ چیزی که ازش فرار می‌کنی یا چیزی که دنبالشی؟". خروجی JSON: {"prompt": "سوال"}`;
-                        break;
-                    default:
-                        prompt = `یک سوال "تداعی کلمات" با کلمه‌ای مثل «انتقام» یا «تنهایی» بپرس. خروجی JSON: {"prompt": "اولین کلمه‌ای که با شنیدن «انتقام» میاد تو ذهنت چیه؟"}`;
+                    default: // word_association & moral_dilemma
+                        prompt = `یک سوال "تداعی کلمات" یا "دوراهی اخلاقی" با لحن ${profile.personality} و بر اساس کلمات کلیدی مثل «بخشش»، «قدرت»، «فراموشی» یا «عدالت» طراحی کن. سوال باید کاربر را به پاسخ متنی وادار کند. خروجی JSON: {"prompt": "متن سوال"}`;
                 }
                 return this._query(prompt);
             },
             
-            async generateFeedback(lastInput) {
-                const prompt = `کاربر به این انتخاب رسیده: "${lastInput.choice}". با لحنی کوچه‌بازاری، روانشناسانه و تهاجمی، یک جمله کوتاه و نیش‌دار بگو که انتخابش رو به چالش بکشه. انگار که داری از بالا بهش نگاه می‌کنی. مثال: "جدی فکر کردی این بهترین جوابت بود؟". خروجی JSON: {"comment": "جمله نیش‌دار تو"}`;
+            async generateFeedback(lastInput, personality) {
+                const prompt = `کاربر به این انتخاب رسیده: "${lastInput.choice}". با لحنی ${personality}، روانشناسانه و عمیق، یک جمله کوتاه و نافذ بگو که انتخابش رو به چالش بکشه یا تفسیر کنه. باید حس دانای کل داشته باشی. مثال: "پس فرار رو به رویارویی ترجیح دادی. قابل پیش‌بینی بود.". خروجی JSON: {"comment": "جمله نافذ تو"}`;
                 return this._query(prompt);
             }
         };
+
         const Visuals = {
-            ctx: document.getElementById('visual-engine').getContext('2d'),
-            width: 0, height: 0, rorschachPoints: [], time: 0,
-            init() { this.resize(); window.addEventListener('resize', () => this.resize(), false); this.loop(); },
-            resize() { this.width = this.ctx.canvas.width = window.innerWidth; this.height = this.ctx.canvas.height = window.innerHeight; },
-            update(distortion) { if (distortion > 10 && Math.random() > 0.7) this.glitch(); },
-            drawRorschach() {
-                this.rorschachPoints = [];
-                const centerX = this.width / 2;
-                const centerY = this.height / 2;
-                const points = 40 + Math.random() * 60;
-                const radius = this.width / 8 + Math.random() * 50;
-                for (let i = 0; i < points; i++) {
-                    const angle = Math.random() * Math.PI;
-                    const r = Math.pow(Math.random(), 2) * radius;
-                    this.rorschachPoints.push({ x: centerX + Math.cos(angle) * r, y: centerY + Math.sin(angle) * r });
+            bgElement: null,
+            ctx: null, canvas: null,
+            width: 0, height: 0, particles: [],
+
+            init() {
+                this.bgElement = document.getElementById('background-image');
+                this.canvas = document.getElementById('particle-overlay');
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize(), false);
+
+                // Create initial particles
+                for(let i = 0; i < 50; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.width,
+                        y: Math.random() * this.height,
+                        vx: (Math.random() - 0.5) * 0.3,
+                        vy: (Math.random() - 0.5) * 0.3,
+                        radius: Math.random() * 1.5 + 0.5,
+                    });
                 }
+                this.loop();
             },
-            glitch() {
-                const canvas = this.ctx.canvas;
-                const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
-                this.ctx.putImageData(imageData, (Math.random() * 30 - 15), 0);
-                this.ctx.drawImage(canvas, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20, 0, Math.random() * this.height, this.width, Math.random() * 80 + 20);
+            
+            resize() {
+                this.width = this.canvas.width = window.innerWidth;
+                this.height = this.canvas.height = window.innerHeight;
             },
-            loop() {
-                this.ctx.globalCompositeOperation = 'source-over';
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-                this.ctx.fillRect(0, 0, this.width, this.height);
+            
+            update(distortion) {
+                // This function now controls the CSS filters on the background image
+                const blur = Math.min(20, 2 + distortion * 1.5); // Max blur of 20px
+                const brightness = Math.max(0.3, 0.7 - distortion * 0.04); // Min brightness of 30%
+                const scale = 1 + distortion * 0.01; // Gentle zoom effect
                 
-                if (this.rorschachPoints.length > 0) {
-                     this.ctx.fillStyle = 'rgba(200, 200, 200, 0.8)';
-                     this.rorschachPoints.forEach(p => {
-                         this.ctx.beginPath(); this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); this.ctx.fill();
-                         const mirroredX = this.width - p.x;
-                         this.ctx.beginPath(); this.ctx.arc(mirroredX, p.y, 2, 0, Math.PI * 2); this.ctx.fill();
-                     });
-                     if (Math.random() > 0.95) this.rorschachPoints.shift();
+                this.bgElement.style.filter = `blur(${blur}px) brightness(${brightness})`;
+                this.bgElement.style.transform = `scale(${scale})`;
+            },
+
+            loop() {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                this.ctx.fillStyle = 'rgba(200, 210, 220, 0.4)';
+
+                for(const p of this.particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if(p.x < 0 || p.x > this.width) p.vx *= -1;
+                    if(p.y < 0 || p.y > this.height) p.vy *= -1;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
                 }
+
                 requestAnimationFrame(() => this.loop());
             }
         };
+
         const Audio = {
             isSetup: false,
             init() {
                 if (this.isSetup) return;
-                this.reverb = new Tone.Reverb({ decay: 8, wet: 0.6 }).toDestination();
-                this.wind = new Tone.Noise("pink").connect(
-                    new Tone.AutoFilter({ frequency: "8m", baseFrequency: 100, octaves: 4 }).connect(this.reverb)
+                this.reverb = new Tone.Reverb({ decay: 10, wet: 0.7 }).toDestination();
+                this.wind = new Tone.Noise("brown").connect(
+                    new Tone.AutoFilter({ frequency: "16m", baseFrequency: 80, octaves: 5 }).connect(this.reverb)
                 );
-                this.wind.volume.value = -25;
+                this.wind.volume.value = -30;
                 this.wind.start();
                 this.isSetup = true;
             },
             update(distortion) {
                 if (!this.isSetup) return;
-                const newVolume = -25 + (distortion * 1.5);
-                this.wind.volume.rampTo(Math.min(-10, newVolume), 3);
+                const newVolume = -30 + (distortion * 1.2);
+                this.wind.volume.rampTo(Math.min(-12, newVolume), 4);
+                this.reverb.wet.rampTo(Math.min(0.9, 0.7 + distortion * 0.02), 4);
             }
         };
 
@@ -557,3 +554,4 @@
     </script>
 </body>
 </html>
+
