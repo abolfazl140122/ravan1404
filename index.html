@@ -9,9 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #c62828;
+            --primary-color: #b71c1c; /* A darker, more blood-like red */
             --background-color: #000;
-            --text-color: #b0bec5;
+            --text-color: #cfd8dc;
         }
         html, body {
             width: 100%; height: 100%; margin: 0; padding: 0;
@@ -23,65 +23,51 @@
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
         }
-        /* New Background Image Styling */
         #background-image {
             position: fixed;
-            top: -5%; left: -5%; /* Overscan to prevent edges on zoom */
+            top: -5%; left: -5%;
             width: 110%; height: 110%;
             background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
             z-index: 1;
-            transition: filter 4s ease-in-out, transform 4s ease-in-out;
-            filter: blur(2px) brightness(0.7);
+            transition: filter 3s ease-in-out, transform 3s ease-in-out;
+            filter: blur(2px) brightness(0.6);
             transform: scale(1);
         }
-        #particle-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 2;
-            pointer-events: none; /* Make sure it doesn't block UI */
+        @keyframes screen-shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
         }
+        .shake-effect { animation: screen-shake 0.5s ease-in-out; }
+        #particle-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
         #ui-layer { z-index: 10; display: flex; justify-content: center; align-items: center; text-align: center; padding: 1rem; color: var(--text-color); }
-        #content-wrapper { width: 95%; max-width: 800px; z-index: 11; }
-        #cursor-follower {
-            position: fixed; width: 22px; height: 22px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.8);
-            pointer-events: none; z-index: 9999; mix-blend-mode: difference;
-            transition: transform 0.1s ease-out, opacity 0.3s ease;
-            will-change: transform; opacity: 0;
-        }
+        #content-wrapper { width: 95%; max-width: 800px; z-index: 11; position: relative; }
+        #cursor-follower { position: fixed; width: 22px; height: 22px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.8); pointer-events: none; z-index: 9999; mix-blend-mode: difference; transition: transform 0.1s ease-out, opacity 0.3s ease; will-change: transform; opacity: 0; }
         @keyframes fadeIn { from { opacity: 0; filter: blur(10px); transform: translateY(20px) scale(0.98); } to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); } }
         @keyframes fadeOut { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(10px); transform: scale(0.98); } }
+        
         .interactive-button, .interactive-submit, .mic-button {
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
             border: 1px solid var(--primary-color); color: var(--primary-color);
             padding: 12px 24px; font-size: 1.1rem; transition: all 0.2s; margin: 8px;
             display: inline-flex; align-items: center; justify-content: center;
         }
         .interactive-button:hover:not(:disabled), .interactive-submit:hover, .mic-button:hover:not(:disabled) { background: var(--primary-color); color: var(--background-color); box-shadow: 0 0 25px var(--primary-color); transform: translateY(-2px) scale(1.05); }
         .interactive-button:disabled, .mic-button:disabled { opacity: 0.4; cursor: not-allowed; }
-        .mic-button.is-listening {
-            background: var(--primary-color); color: var(--background-color);
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(198, 40, 40, 0); } 100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); } }
-        .interactive-input {
-            background: transparent; color: #fff; border: none; border-bottom: 2px solid var(--text-color);
-            text-align: center; width: 80%; max-width: 450px; font-size: 2rem; padding: 10px;
-        }
-        .interactive-input:focus { outline: none; border-color: var(--primary-color); }
-        .color-palette { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 2rem; }
-        .color-swatch { width: 60px; height: 60px; border-radius: 50%; border: 3px solid transparent; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: pointer; }
-        .color-swatch:hover { transform: scale(1.15); border-color: #fff; }
-        #feedback-text { font-size: 1.8rem; font-weight: 700; text-shadow: 0 0 15px #64b5f6; }
+        .mic-button.is-listening { background: var(--primary-color); color: var(--background-color); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(183, 28, 28, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(183, 28, 28, 0); } 100% { box-shadow: 0 0 0 0 rgba(183, 28, 28, 0); } }
+
+        /* Stage specific styles */
+        #stroop-prompt { font-size: 4rem; font-weight: 900; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        #generated-image-container { max-width: 90%; max-height: 400px; margin: 1rem auto; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #444; }
+        #generated-image { max-width: 100%; max-height: 380px; object-fit: contain; }
+        .image-loader { color: white; font-size: 1.5rem; }
     </style>
 </head>
 <body>
     <div id="app-container">
-        <!-- Visual engine now contains the background image and a particle canvas -->
         <div id="visual-engine">
             <div id="background-image"></div>
             <canvas id="particle-overlay"></canvas>
@@ -92,14 +78,23 @@
 
     <script>
         // ===================================================================================
-        // UTILITIES & CUSTOM ERRORS
+        // UTILITIES & HARDWARE
         // ===================================================================================
         class NonRetryableError extends Error {
-            constructor(message) {
-                super(message);
-                this.name = "NonRetryableError";
-            }
+            constructor(message) { super(message); this.name = "NonRetryableError"; }
         }
+        const Hardware = {
+            vibrate(pattern = [200, 100, 200]) {
+                if ('vibrate' in navigator) {
+                    try { navigator.vibrate(pattern); } catch (e) { console.warn("Could not vibrate:", e); }
+                }
+            },
+            shakeScreen() {
+                const app = document.getElementById('app-container');
+                app.classList.add('shake-effect');
+                setTimeout(() => app.classList.remove('shake-effect'), 500);
+            }
+        };
 
         // ===================================================================================
         // CORE MODULE: The Game's Soul
@@ -108,105 +103,106 @@
             state: {
                 currentFlow: 'intro',
                 distortion: 0.0,
-                userProfile: { name: 'مسافر', choices: [], personality: 'تهاجمی' },
+                userProfile: { choices: [], personality: 'رفیق بازاری' },
                 lastInput: null,
                 isAudioReady: false,
-                micPermission: 'prompt', // 'prompt', 'granted', 'denied'
+                micPermission: 'prompt',
             },
 
             init() {
                 UI.init();
                 Visuals.init();
-                Voice.init(); // Voice module is initialized but doesn't request permission yet
                 UI.renderIntro();
             },
 
-            async primeAudioAndStart() {
-                // Step 1: Start Tone.js audio context
+            async primeSystemAndStart() {
+                UI.renderLoader("در انتظار اجازه‌ی تو...");
                 try {
                     if (!this.state.isAudioReady) {
                         await Tone.start();
                         Audio.init();
                         this.state.isAudioReady = true;
                     }
-                } catch(e) {
-                    console.error("Audio Context Failed To Start:", e);
-                    // Non-critical error, the game can continue without sound
-                }
-                
-                // Step 2: Request microphone permission
-                UI.renderLoader("در انتظار اجازه‌ی تو برای شنیدن صدایت...");
-                try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(track => track.stop()); // We don't need the stream now, just the permission
+                    stream.getTracks().forEach(track => track.stop());
                     this.state.micPermission = 'granted';
-                    console.log("Microphone access granted.");
                     this.startExperience();
                 } catch (err) {
-                    console.error("Microphone permission denied by user.", err);
+                    console.error("Permission denied:", err);
                     this.state.micPermission = 'denied';
-                    // The experience starts even if permission is denied.
-                    UI.renderLoader("دسترسی به میکروفون رد شد. تجربه ادامه می‌یابد...");
+                    UI.renderLoader("دسترسی به میکروفون رد شد. تجربه بدون صدا ادامه پیدا می‌کنه...");
                     setTimeout(() => this.startExperience(), 2500);
                 }
             },
 
-            startExperience() {
-                this.transitionTo('loading_stage');
-            },
+            startExperience() { this.transitionTo('loading_stage'); },
 
             async transitionTo(flowState, context = {}) {
                 this.state.currentFlow = flowState;
                 switch (flowState) {
                     case 'loading_stage':
-                        await UI.renderLoader("طنین در حال یافتن توست...");
+                        await UI.renderLoader("ذهن داره برات یه چیزی جور می‌کنه...");
                         const stageType = this.determineNextStage();
                         try {
-                            const stageData = await AI.generateStage(stageType, this.state.userProfile);
-                            if (!stageData) throw new Error("AI returned no data");
-                            this.transitionTo('stage', { type: stageType, data: stageData });
-                        } catch (e) {
-                            this.handleAIError(e, () => this.transitionTo('loading_stage', context));
-                        }
+                            if (stageType === 'image_generation_test') {
+                                this.transitionTo('generating_image');
+                            } else {
+                                const stageData = await AI.generateStage(stageType, this.state.userProfile);
+                                this.transitionTo('stage', { type: stageType, data: stageData });
+                            }
+                        } catch (e) { this.handleAIError(e, () => this.transitionTo('loading_stage')); }
                         break;
+                    
+                    case 'generating_image':
+                        await UI.renderLoader("در حال خلق یک تصویر از اعماق ذهن...");
+                        try {
+                            const imageData = await AI.generateImage(this.state.userProfile);
+                             this.transitionTo('stage', { type: 'image_generation_test', data: imageData });
+                        } catch (e) { this.handleAIError(e, () => this.transitionTo('loading_stage')); }
+                        break;
+
                     case 'stage':
                         UI.renderStage(context.type, context.data);
-                        break;
-                    case 'loading_feedback':
-                        await UI.renderLoader("در حال تحلیل پاسخ تو...");
-                        try {
-                            const feedbackData = await AI.generateFeedback(this.state.lastInput, this.state.userProfile.personality);
-                            if (!feedbackData) throw new Error("AI returned no feedback");
-                            this.transitionTo('feedback', { data: feedbackData });
-                        } catch (e) {
-                            this.handleAIError(e, () => this.transitionTo('loading_feedback', context));
+                        if (context.type === 'vibration_event') {
+                            Hardware.vibrate();
+                            Hardware.shakeScreen();
                         }
                         break;
+
+                    case 'loading_feedback':
+                        await UI.renderLoader("دارم حرفاتو هضم می‌کنم...");
+                        try {
+                            const feedbackData = await AI.generateFeedback(this.state.lastInput, this.state.userProfile.personality);
+                            this.transitionTo('feedback', { data: feedbackData });
+                        } catch (e) { this.handleAIError(e, () => this.transitionTo('loading_feedback')); }
+                        break;
+
                     case 'feedback':
                         await UI.renderFeedback(context.data.comment);
                         setTimeout(() => this.transitionTo('loading_stage'), 6000);
                         break;
+
                     default:
-                        this.handleAIError(new Error("Unknown flow state"), () => this.startExperience());
+                        this.handleAIError(new Error("Flow state ناشناخته."), () => this.startExperience());
                 }
             },
             
             determineNextStage() {
-                const stages = ['question', 'color_game', 'word_association', 'moral_dilemma'];
-                if (this.state.distortion > 4) stages.push('void_stare');
-                if (this.state.distortion > 8 && this.state.userProfile.choices.length > 2) {
-                    stages.push('memory_corruption');
-                }
+                const stages = ['question', 'stroop_test', 'word_association'];
+                if (this.state.distortion > 3) stages.push('moral_dilemma');
+                if (this.state.distortion > 6) stages.push('image_generation_test');
+                if (this.state.distortion > 9 && Math.random() < 0.3) stages.push('vibration_event'); // Rare event
+                if (this.state.distortion > 12 && this.state.userProfile.choices.length > 3) stages.push('memory_corruption');
+                
                 return stages[Math.floor(Math.random() * stages.length)];
             },
             
             handleAIError(error, retryFunction) {
+                console.error("AI Error:", error);
                 if (error instanceof NonRetryableError) {
-                    console.error("Entity Communication Failed:", error);
-                    UI.renderError(`ارتباط با طنین قطع شد: ${error.message}.`);
+                    UI.renderError(`ارتباط با ذهن قطع شد: ${error.message}.`);
                 } else {
-                    console.warn("Temporary AI failure. Retrying...", error);
-                    UI.renderLoader("ارتباط با طنین ناپایدار است. در حال تلاش مجدد...");
+                    UI.renderLoader("امواج مغزی ضعیفه... دارم دوباره سعی می‌کنم.");
                     setTimeout(retryFunction, 7000);
                 }
             },
@@ -217,8 +213,9 @@
                 
                 const collapseAmount = inputData.collapse || 1.0;
                 this.state.distortion += collapseAmount;
-                if (this.state.distortion > 15) this.state.userProfile.personality = 'آشفته';
-                else if (this.state.distortion > 8) this.state.userProfile.personality = 'بی‌رحم';
+
+                if (this.state.distortion > 15) this.state.userProfile.personality = 'روانی و بی‌پرده';
+                else if (this.state.distortion > 8) this.state.userProfile.personality = 'تیکه‌انداز و بی‌رحم';
 
                 Visuals.update(this.state.distortion);
                 if (this.state.isAudioReady) Audio.update(this.state.distortion);
@@ -227,10 +224,10 @@
         };
         
         // ===================================================================================
-        // UI MODULE: The Visual Interface
+        // UI MODULE
         // ===================================================================================
         const UI = {
-            init() {
+            init() { /* ... unchanged ... */
                 const cursor = document.getElementById('cursor-follower');
                 if (cursor) {
                     window.addEventListener('mousemove', e => {
@@ -242,13 +239,13 @@
                     document.body.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; });
                 }
             },
-            _setContent(html, anim = 'fadeIn') {
+            _setContent(html) {
                 return new Promise(res => {
                     const wrapper = document.getElementById('content-wrapper');
                     wrapper.style.animation = 'fadeOut 0.5s forwards ease-in-out';
                     setTimeout(() => {
                         wrapper.innerHTML = html;
-                        wrapper.style.animation = `${anim} 1s forwards ease-in-out`;
+                        wrapper.style.animation = `fadeIn 1s forwards ease-in-out`;
                         res();
                     }, 500);
                 });
@@ -257,103 +254,89 @@
             renderIntro() {
                this._setContent(`
                     <h1 class="text-6xl md:text-7xl font-black text-white" style="text-shadow: 0 0 15px rgba(255,255,255,0.3);">خلسه</h1>
-                    <p class="mt-4 text-gray-400 text-xl">طنینِ یک ذهن، در انتظارِ پژواکِ توست.</p>
-                    <button id="start-btn" class="interactive-button mt-8">آغاز کن</button>
+                    <p class="mt-4 text-gray-400 text-xl">یه ذهن منتظرته. جرئتشو داری؟</p>
+                    <button id="start-btn" class="interactive-button mt-8">بزن بریم</button>
                 `).then(() => {
-                    document.getElementById('start-btn').onclick = () => Engine.primeAudioAndStart();
+                    document.getElementById('start-btn').onclick = () => Engine.primeSystemAndStart();
                 });
             },
             renderLoader(text) { return this._setContent(`<p class="text-2xl text-gray-400">${text}</p>`); },
             renderError(msg) { return this._setContent(`<p class="text-2xl text-red-400">${msg}</p>`); },
-            renderFeedback(comment) { return this._setContent(`<p id="feedback-text" class="text-blue-300">"${comment}"</p>`); },
+            renderFeedback(comment) { return this._setContent(`<p class="text-2xl font-bold text-blue-300">"${comment}"</p>`); },
+
             renderStage(type, data) {
                 let html = '';
-                let hasTextInput = false;
                 switch(type) {
                     case 'question':
                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div data-stage-type="${type}">${data.choices.map(c => `<button class="interactive-button" data-collapse="${c.collapse}">${c.text}</button>`).join('')}</div>`;
                         break;
-                    case 'color_game':
-                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div class="color-palette" data-stage-type="${type}">${data.colors.map(c => `<div class="color-swatch" style="background-color: ${c.hex};" data-collapse="${c.collapse}" data-meaning="${c.meaning}"></div>`).join('')}</div>`;
+                    case 'stroop_test':
+                        html = `<p class="text-2xl md:text-3xl mb-6">${data.prompt}</p>
+                                <p id="stroop-prompt" style="color: ${data.display_color};">${data.word}</p>
+                                <div class="color-palette mt-8" data-stage-type="${type}" data-correct="${data.correct_answer}">${data.choices.map(c => `<div class="color-swatch" style="background-color: ${c};" data-choice="${c}"></div>`).join('')}</div>`;
                         break;
-                    case 'void_stare':
-                         html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p><div data-stage-type="${type}"><button id="void-btn" class="interactive-button">دیگر بس است</button></div>`;
+                    case 'image_generation_test':
+                         html = `<p class="text-2xl md:text-3xl mb-4">${data.prompt}</p>
+                                 <div id="generated-image-container">
+                                     <img id="generated-image" src="${data.imageUrl}" alt="تصویر خلق شده توسط هوش مصنوعی">
+                                 </div>
+                                 <div class="flex flex-col items-center gap-4 mt-4">
+                                     <input type="text" id="text-input" class="interactive-input" autocomplete="off" placeholder="چه حسی داری؟...">
+                                     <button id="submit-btn" class="interactive-submit">بفرست</button>
+                                 </div>`;
                         break;
-                    case 'memory_corruption':
-                    case 'word_association':
-                    case 'moral_dilemma':
-                        hasTextInput = true;
+                    case 'vibration_event':
+                        html = `<p class="text-3xl md:text-4xl font-black text-red-500">${data.prompt}</p>`;
+                        setTimeout(() => Engine.processUserInput({ type: type, choice: 'لرزش احساس شد', collapse: 3 }), 3000);
                         break;
-                    default:
-                         html = `<p class="text-2xl text-red-500">خطای مرحله. در حال بارگذاری مجدد...</p>`;
-                         console.error("Unknown stage type received:", type, data);
-                }
-                
-                if (hasTextInput) {
-                    html = `<div data-stage-type="${type}">
-                                <p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
+                    default: // word_association, moral_dilemma, memory_corruption
+                        html = `<p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
                                 <div class="flex flex-col items-center gap-4">
-                                    <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
+                                    <input type="text" id="text-input" class="interactive-input" autocomplete="off" placeholder="جوابتو بنویس...">
                                     <div class="flex items-center gap-4 mt-4">
-                                        <button class="interactive-submit" id="submit-btn">ثبت</button>
-                                        <button class="mic-button" id="mic-btn" ${Engine.state.micPermission !== 'granted' ? 'disabled' : ''}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                                        <button id="submit-btn" class="interactive-submit">بفرست</button>
+                                        <button id="mic-btn" class="mic-button" ${Engine.state.micPermission !== 'granted' ? 'disabled' : ''}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
                                         </button>
                                     </div>
-                                </div>
-                            </div>`;
+                                </div>`;
                 }
                 this._setContent(html).then(() => this.setupStageListeners(type));
             },
             
             setupStageListeners(type) {
-                // ... (Listener logic is largely the same, but mic button is now handled correctly)
-                const submitBtn = document.getElementById('submit-btn');
-                const textInput = document.getElementById('text-input');
-                const micBtn = document.getElementById('mic-btn');
-
                 if (type === 'question') {
                     document.querySelectorAll('.interactive-button').forEach(btn => {
-                        btn.onclick = () => Engine.processUserInput({ type: type, choice: btn.innerText, collapse: parseFloat(btn.dataset.collapse || 1) });
+                        btn.onclick = () => Engine.processUserInput({ type: type, choice: btn.innerText, collapse: parseFloat(btn.dataset.collapse) });
                     });
-                } else if (type === 'color_game') {
-                     document.querySelectorAll('.color-swatch').forEach(swatch => {
-                        swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseFloat(swatch.dataset.collapse || 1) });
+                } else if (type === 'stroop_test') {
+                    const container = document.querySelector('[data-stage-type="stroop_test"]');
+                    const correctAnswer = container.dataset.correct;
+                    document.querySelectorAll('.color-swatch').forEach(swatch => {
+                        swatch.onclick = () => {
+                            const isCorrect = swatch.dataset.choice === correctAnswer;
+                            Engine.processUserInput({ type: type, choice: swatch.dataset.choice, collapse: isCorrect ? 0.5 : 4.0 });
+                        };
                     });
-                } else if (type === 'void_stare') {
-                     document.getElementById('void-btn').onclick = () => {
-                        const duration = (Date.now() - Engine.state.stageStartTime) / 1000;
-                        const collapse = Math.min(5, Math.max(0.5, duration / 5));
-                        Engine.processUserInput({ type: type, choice: `${duration.toFixed(1)} ثانیه`, collapse: collapse });
-                    };
-                } else if (submitBtn && textInput) {
-                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 10) }); };
-                    submitBtn.onclick = action;
-                    textInput.onkeydown = e => { if (e.key === 'Enter') action(); };
-                }
+                } else if (type === 'image_generation_test' || type.includes('association') || type.includes('dilemma') || type.includes('corruption')) {
+                     const submitBtn = document.getElementById('submit-btn');
+                     const textInput = document.getElementById('text-input');
+                     const micBtn = document.getElementById('mic-btn');
 
-                if (micBtn && Engine.state.micPermission === 'granted') {
-                    micBtn.onclick = () => Voice.listen();
-                } else if (micBtn) {
-                    micBtn.title = "دسترسی به میکروفون داده نشده است.";
+                    const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 10) }); };
+                    if (submitBtn) submitBtn.onclick = action;
+                    if (textInput) textInput.onkeydown = e => { if (e.key === 'Enter') action(); };
+                    if (micBtn && Engine.state.micPermission === 'granted') micBtn.onclick = () => Voice.listen();
                 }
             }
         };
 
         // ===================================================================================
-        // VOICE MODULE: Handles Speech Recognition
+        // VOICE, AI, VISUALS, AUDIO MODULES
         // ===================================================================================
-        const Voice = {
+        const Voice = { /* ... unchanged from previous version, as it's now correctly controlled by Engine ... */ 
             recognition: null,
             isSupported: ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window),
-
-            init() {
-                if (!this.isSupported) {
-                    console.warn("Speech recognition not supported.");
-                    return;
-                }
-                // Don't do anything here, permission is handled by the Engine
-            },
 
             listen() {
                 if (!this.isSupported || Engine.state.micPermission !== 'granted') return;
@@ -370,14 +353,14 @@
                 const textInput = document.getElementById('text-input');
                 let final_transcript = '';
 
-                this.recognition.onstart = () => { micBtn.classList.add('is-listening'); textInput.placeholder = 'در حال شنیدن...'; };
+                this.recognition.onstart = () => { micBtn.classList.add('is-listening'); textInput.placeholder = 'دارم گوش میدم...'; };
                 this.recognition.onend = () => {
                     micBtn.classList.remove('is-listening');
                     if (final_transcript.trim()) {
                         const stageTypeElement = document.querySelector('[data-stage-type]');
                         const stageType = stageTypeElement ? stageTypeElement.dataset.stageType : 'voice_input';
                         Engine.processUserInput({ type: stageType, choice: final_transcript });
-                    } else { textInput.placeholder = 'پاسخ تو...'; }
+                    } else { textInput.placeholder = 'جوابتو بنویس...'; }
                 };
                 this.recognition.onerror = (event) => { console.error('Voice recognition error:', event.error); textInput.placeholder = `خطا: ${event.error}`; };
                 this.recognition.onresult = (event) => {
@@ -393,143 +376,123 @@
             }
         };
 
-        // ===================================================================================
-        // AI, VISUALS, AUDIO MODULES
-        // ===================================================================================
         const AI = {
-             // ... (AI logic remains the same)
-            apiKey: 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724',
+            apiKey: "", // Leave empty, it will be handled by the environment
 
-            async _fetchWithTimeout(resource, options = {}, timeout = 20000) {
-                 const controller = new AbortController();
-                 const id = setTimeout(() => controller.abort(), timeout);
-                 const response = await fetch(resource, { ...options, signal: controller.signal });
-                 clearTimeout(id);
-                 return response;
-            },
-            
-            async _query(prompt, retries = 3, backoff = 2000) {
-                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                const payload = { contents: chatHistory };
+            async _queryGemini(prompt) {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
                 
                 try {
-                    const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    
-                    if (!response.ok) {
-                        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
-                            const errorBody = await response.json().catch(() => ({}));
-                            const errorMessage = errorBody?.error?.message || `خطای سمت سرویس گیرنده: ${response.status}`;
-                            throw new NonRetryableError(errorMessage);
-                        }
-                        throw new Error(`خطای API: ${response.status}`);
-                    }
-                    
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
                     const result = await response.json();
-                    if (result.candidates?.[0]?.content?.parts?.[0]) {
-                        const text = result.candidates[0].content.parts[0].text;
-                        try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
-                        catch (e) { console.error("JSON نامعتبر از هوش مصنوعی:", text); throw new Error("پاسخ با فرمت نامعتبر از طنین."); }
-                    } else if (result.promptFeedback && result.promptFeedback.blockReason){
-                         throw new NonRetryableError(`درخواست توسط API مسدود شد: ${result.promptFeedback.blockReason}`);
-                    } else { throw new Error("ساختار پاسخ غیرمنتظره."); }
+                    
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                        throw new NonRetryableError(`درخواست توسط API بلاک شد: ${result.promptFeedback.blockReason}`);
+                    }
+                    const text = result.candidates[0].content.parts[0].text;
+                    return JSON.parse(text.replace(/```json|```/g, '').trim());
                 } catch (error) {
-                    if (error instanceof NonRetryableError || retries <= 0) { throw error; }
-                    await new Promise(resolve => setTimeout(resolve, backoff));
-                    return this._query(prompt, retries - 1, backoff * 2);
+                    console.error("Gemini Query Error:", error);
+                    if (error instanceof NonRetryableError) throw error;
+                    throw new Error("پاسخ نامعتبر از Gemini.");
+                }
+            },
+
+            async generateImage(profile) {
+                const imagePromptGenerator = `یک پرامپت کوتاه (حدود ۱۰ تا ۱۵ کلمه) برای ساختن یک تصویر سورئال، وهم‌آور و روانشناختی به زبان انگلیسی بساز. این تصویر باید حسی از تنهایی، راز یا اضطراب را القا کند. فقط خود پرامپت را به عنوان خروجی بده. مثال: "a single red chair in an empty, decaying grand ballroom, dust floating in a single sunbeam"`;
+                 const imagePromptPayload = { contents: [{ role: "user", parts: [{ text: imagePromptGenerator }] }] };
+                 const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
+                
+                const promptResponse = await fetch(geminiApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(imagePromptPayload) });
+                const promptResult = await promptResponse.json();
+                const imagePrompt = promptResult.candidates[0].content.parts[0].text.trim();
+
+                const payload = { instances: [{ prompt: imagePrompt }], parameters: { "sampleCount": 1 } };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${this.apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`Imagen API Error: ${response.status}`);
+                    const result = await response.json();
+                    if (result.predictions && result.predictions[0].bytesBase64Encoded) {
+                         return {
+                            prompt: "به این تصویر نگاه کن. اولین کلمه‌ای که به ذهنت میاد چیه؟",
+                            imageUrl: `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`
+                        };
+                    }
+                    throw new Error("پاسخ نامعتبر از Imagen.");
+                } catch (error) {
+                    console.error("Imagen API Error:", error);
+                    throw error;
                 }
             },
 
             async generateStage(type, profile) {
                 let prompt;
-                const previousChoices = profile.choices.map(c => c.choice).slice(-3).join(', ') || 'سکوت';
+                const personality = profile.personality;
                 switch (type) {
                     case 'question':
-                        prompt = `با توجه به اینکه کاربر اخیراً انتخاب‌هایی مثل "${previousChoices}" داشته، یک سوال دو گزینه‌ای فلسفی با لحن روانشناسانه و ${profile.personality} طراحی کن. موضوعات: پوچی، اراده آزاد، معنای رنج. گزینه‌ها باید امتیاز فروپاشی (collapse) بین ۱ تا ۳ داشته باشند. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "متن گزینه", "collapse": امتیاز}]}`;
+                        prompt = `یه سوال دو گزینه‌ای بساز که آدمو تو فشار بذاره. موضوعش یه چیزی مثل انتخاب بین دوتا بدبختی باشه. لحنت ${personality} باشه. خروجی JSON: {"prompt": "متن سوال", "choices": [{"text": "گزینه ۱", "collapse": امتیاز}, {"text": "گزینه ۲", "collapse": امتیاز}]}`;
                         break;
-                    case 'color_game':
-                        prompt = `یک سوال انتزاعی بپرس که کاربر با یک رنگ پاسخ دهد. لحن ${profile.personality} باشد. مثلا "رنگ «حسرتی که فراموش نمیشه» چیه؟". یک پالت ۶ تایی رنگ با معانی عمیق و امتیاز فروپاشی (collapse) بین ۱ تا ۴ بده. خروجی JSON: {"prompt": "سوال", "colors": [{"hex": "#کدرنگ", "meaning": "معنی", "collapse": امتیاز}]}`;
+                    case 'stroop_test':
+                        prompt = `یه بازی روانی "استروپ" بساز. یه کلمه که اسم یه رنگه، با یه رنگ دیگه نمایش داده می‌شه. کاربر باید رنگی که کلمه باهاش نوشته شده رو انتخاب کنه. گیج کننده باشه. خروجی JSON: {"prompt": "کلمه‌ی زیر رو بخون و رنگش رو انتخاب کن، نه کلمه‌ رو", "word": "قرمز", "display_color": "blue", "choices": ["red", "blue", "green"], "correct_answer": "blue"}`;
                         break;
-                    case 'void_stare':
-                        prompt = `یک جمله کوتاه و وهم‌آور برای خیره شدن به یک فضای خالی بنویس. باید کاربر را به فکر فرو ببرد. مثال: "این پوچی به تو خیره شده. چه زمانی نگاهت را می‌دزدی؟". خروجی JSON: {"prompt": "متن سوال"}`;
+                    case 'vibration_event':
+                        prompt = `یه جمله خیلی کوتاه و نگران‌کننده برای یه رویداد شوکه‌کننده (لرزش) بساز. خروجی JSON: {"prompt": "صبر کن... یه چیزی درست نیست."}`;
                         break;
-                    case 'memory_corruption':
-                        const targetChoice = profile.choices[Math.floor(Math.random() * profile.choices.length)];
-                        prompt = `پاسخ قبلی کاربر "${targetChoice.choice}" بوده. این خاطره رو تحریف کن و سوالی ${profile.personality} بپرس که حافظه‌اش رو زیر سوال ببره. مثال: اگر گفته "امید"، بپرس "یادمه می‌گفتی امید فقط یک دروغه برای ضعیف‌ها. هنوز بهش معتقدی؟". خروجی JSON: {"prompt": "سوال تحریف شده"}`;
-                        break;
-                    default: // word_association & moral_dilemma
-                        prompt = `یک سوال "تداعی کلمات" یا "دوراهی اخلاقی" با لحن ${profile.personality} و بر اساس کلمات کلیدی مثل «بخشش»، «قدرت»، «فراموشی» یا «عدالت» طراحی کن. سوال باید کاربر را به پاسخ متنی وادار کند. خروجی JSON: {"prompt": "متن سوال"}`;
+                    default: // word_association, moral_dilemma, etc.
+                        prompt = `یه سوال عمیق یا یه دوراهی اخلاقی با لحن ${personality} بساز که جوابش متنی باشه. یه کلمه‌ی کلیدی مثل "انتقام"، "قدرت" یا "فراموشی" توش باشه. خروجی JSON: {"prompt": "متن سوال"}`;
                 }
-                return this._query(prompt);
+                return this._queryGemini(prompt);
             },
             
             async generateFeedback(lastInput, personality) {
-                const prompt = `کاربر به این انتخاب رسیده: "${lastInput.choice}". با لحنی ${personality}، روانشناسانه و عمیق، یک جمله کوتاه و نافذ بگو که انتخابش رو به چالش بکشه یا تفسیر کنه. باید حس دانای کل داشته باشی. مثال: "پس فرار رو به رویارویی ترجیح دادی. قابل پیش‌بینی بود.". خروجی JSON: {"comment": "جمله نافذ تو"}`;
-                return this._query(prompt);
+                const prompt = `رفیقت به این جواب رسیده: "${lastInput.choice}". با لحن ${personality} یه تیکه‌ی کوتاه و خودمونی بهش بنداز که به فکر فرو بره. انگار داری مچشو می‌گیری. مثال: "هه! فکر کردی با این جواب چیزی عوض میشه؟". خروجی JSON: {"comment": "تیکه‌ی تو"}`;
+                return this._queryGemini(prompt);
             }
         };
 
-        const Visuals = {
-            bgElement: null,
-            ctx: null, canvas: null,
-            width: 0, height: 0, particles: [],
-
+        const Visuals = { /* ... unchanged ... */ 
+            bgElement: null, ctx: null, canvas: null, width: 0, height: 0, particles: [],
             init() {
                 this.bgElement = document.getElementById('background-image');
                 this.canvas = document.getElementById('particle-overlay');
                 this.ctx = this.canvas.getContext('2d');
                 this.resize();
                 window.addEventListener('resize', () => this.resize(), false);
-
-                // Create initial particles
                 for(let i = 0; i < 50; i++) {
                     this.particles.push({
-                        x: Math.random() * this.width,
-                        y: Math.random() * this.height,
-                        vx: (Math.random() - 0.5) * 0.3,
-                        vy: (Math.random() - 0.5) * 0.3,
+                        x: Math.random() * this.width, y: Math.random() * this.height,
+                        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
                         radius: Math.random() * 1.5 + 0.5,
                     });
                 }
                 this.loop();
             },
-            
-            resize() {
-                this.width = this.canvas.width = window.innerWidth;
-                this.height = this.canvas.height = window.innerHeight;
-            },
-            
+            resize() { this.width = this.canvas.width = window.innerWidth; this.height = this.canvas.height = window.innerHeight; },
             update(distortion) {
-                // This function now controls the CSS filters on the background image
-                const blur = Math.min(20, 2 + distortion * 1.5); // Max blur of 20px
-                const brightness = Math.max(0.3, 0.7 - distortion * 0.04); // Min brightness of 30%
-                const scale = 1 + distortion * 0.01; // Gentle zoom effect
-                
-                this.bgElement.style.filter = `blur(${blur}px) brightness(${brightness})`;
+                const blur = Math.min(20, 2 + distortion * 1.2);
+                const brightness = Math.max(0.2, 0.6 - distortion * 0.04);
+                const scale = 1 + distortion * 0.015;
+                const saturate = Math.max(0.5, 1 - distortion * 0.05);
+                this.bgElement.style.filter = `blur(${blur}px) brightness(${brightness}) saturate(${saturate})`;
                 this.bgElement.style.transform = `scale(${scale})`;
             },
-
             loop() {
                 this.ctx.clearRect(0, 0, this.width, this.height);
-                this.ctx.fillStyle = 'rgba(200, 210, 220, 0.4)';
-
+                this.ctx.fillStyle = 'rgba(200, 210, 220, 0.3)';
                 for(const p of this.particles) {
-                    p.x += p.vx;
-                    p.y += p.vy;
-
+                    p.x += p.vx; p.y += p.vy;
                     if(p.x < 0 || p.x > this.width) p.vx *= -1;
                     if(p.y < 0 || p.y > this.height) p.vy *= -1;
-
-                    this.ctx.beginPath();
-                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    this.ctx.fill();
+                    this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); this.ctx.fill();
                 }
-
                 requestAnimationFrame(() => this.loop());
             }
         };
-
-        const Audio = {
+        const Audio = { /* ... unchanged ... */ 
             isSetup: false,
             init() {
                 if (this.isSetup) return;
