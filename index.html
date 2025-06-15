@@ -78,6 +78,7 @@
             },
 
             init() {
+                // *** REMOVED: No longer need to ask for API key. ***
                 UI.init();
                 Visuals.init();
                 Voice.init();
@@ -145,18 +146,11 @@
                 return stages[Math.floor(Math.random() * stages.length)];
             },
             
-            // *** MODIFIED: Automatic reconnection logic ***
+            // *** MODIFIED: More robust error handling ***
             handleAIError(error) {
-                console.error("ارتباط با هوش مصنوعی ناموفق بود. در حال تلاش مجدد...", error);
-                // نمایش یک پیام خطا که نشان می‌دهد در حال تلاش مجدد است.
-                UI.renderLoader("ارتباط با طنین قطع شد. در حال تلاش مجدد...");
-                
-                // به صورت خودکار پس از یک تاخیر، مرحله بعدی را دوباره امتحان می‌کند.
-                // این یک حلقه ایجاد می‌کند که تا زمان برقراری مجدد ارتباط به تلاش ادامه می‌دهد.
-                setTimeout(() => {
-                    // تلاش مجدد برای 'loading_stage' یک راه امن برای ادامه تجربه است.
-                    this.transitionTo('loading_stage');
-                }, 5000); // ۵ ثانیه قبل از تلاش مجدد صبر کن.
+                console.error("Entity Communication Failed after multiple retries:", error);
+                UI.renderError("ارتباط با طنین به طور کامل قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.");
+                // We stop the flow here as the error is likely persistent.
             },
 
             processUserInput(inputData) {
@@ -197,8 +191,10 @@
                 });
             },
             
+            // *** REMOVED: API Key prompt is no longer needed. ***
+
             renderIntro() {
-               this._setContent(`
+                 this._setContent(`
                     <h1 class="text-6xl font-black">خلسه</h1>
                     <p class="mt-4 text-gray-500">یک هم‌صحبت، در انتظار توست.</p>
                     <button id="start-btn" class="interactive-button mt-8">آغاز کن</button>
@@ -235,6 +231,7 @@
                 }
                 
                 if (hasTextInput) {
+                    // Make sure data.prompt exists before trying to display it
                     const promptText = data.prompt || "لطفاً پاسخ دهید...";
                     html = `<div data-stage-type="${type}">
                                 <p class="text-2xl md:text-3xl mb-8">${promptText}</p>
@@ -263,7 +260,7 @@
                     });
                 } else if (type === 'color_game') {
                      document.querySelectorAll('.color-swatch').forEach(swatch => {
-                         swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseInt(swatch.dataset.collapse || 1) });
+                        swatch.onclick = () => Engine.processUserInput({ type: type, choice: swatch.dataset.meaning, collapse: parseInt(swatch.dataset.collapse || 1) });
                     });
                 } else if (submitBtn && textInput) {
                     const action = () => { if (textInput.value.trim()) Engine.processUserInput({ type: type, choice: textInput.value, collapse: 1 + Math.floor(textInput.value.length / 5) }); };
@@ -371,8 +368,9 @@
                  return response;
             },
             
+            // *** MODIFIED: Added automatic retry logic and hardcoded API key ***
             async _query(prompt, retries = 3, backoff = 1000) {
-                const apiKey = ""; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+                const apiKey = 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724'; // <-- کلید شما اینجا قرار گرفته
 
                 const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
