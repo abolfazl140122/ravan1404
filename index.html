@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>خلسه (نسخه اصلاح شده)</title>
+    <title>خلسه</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
@@ -31,12 +31,6 @@
             pointer-events: none; z-index: 9999; mix-blend-mode: exclusion;
             transition: transform 0.1s ease-out, opacity 0.3s ease;
             will-change: transform; opacity: 0;
-        }
-        #permission-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8); z-index: 100;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px);
         }
         @keyframes fadeIn { from { opacity: 0; filter: blur(5px); transform: scale(0.95); } to { opacity: 1; filter: blur(0); transform: scale(1); } }
         @keyframes fadeOut { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(5px); } }
@@ -84,25 +78,11 @@
             },
 
             init() {
-                // *** NEW: Check for API key before starting the experience ***
-                this.ensureApiKey().then(() => {
-                    UI.init();
-                    Visuals.init();
-                    Voice.init();
-                    UI.renderIntro();
-                });
-            },
-            
-            async ensureApiKey() {
-                // Check if the API key is already stored in the browser's local storage
-                if (localStorage.getItem('gemini_api_key')) {
-                    return Promise.resolve();
-                } else {
-                    // If not, show a prompt to the user to enter their key
-                    return new Promise(resolve => {
-                        UI.renderApiKeyPrompt(resolve);
-                    });
-                }
+                // *** REMOVED: No longer need to ask for API key. ***
+                UI.init();
+                Visuals.init();
+                Voice.init();
+                UI.renderIntro();
             },
 
             async primeAudioAndStart() {
@@ -166,22 +146,17 @@
                 return stages[Math.floor(Math.random() * stages.length)];
             },
             
+            // *** MODIFIED: More robust error handling ***
             handleAIError(error) {
-                console.error("Entity Communication Failed:", error);
-                 // *** NEW: Better error message for API key issues ***
-                if (error.message.includes("API Error: 400") || error.message.includes("API key not valid")) {
-                     localStorage.removeItem('gemini_api_key'); // Remove invalid key
-                     UI.renderError("کلید API نامعتبر است. لطفاً صفحه را رفرش کرده و کلید معتبر وارد کنید.");
-                } else {
-                     UI.renderError("ارتباط با طنین... مختل شد. تلاش مجدد...");
-                     setTimeout(() => this.transitionTo('loading_stage'), 5000);
-                }
+                console.error("Entity Communication Failed after multiple retries:", error);
+                UI.renderError("ارتباط با طنین به طور کامل قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.");
+                // We stop the flow here as the error is likely persistent.
             },
 
             processUserInput(inputData) {
                 this.state.lastInput = inputData;
                 this.state.userProfile.choices.push(inputData);
-                this.state.distortion += inputData.collapse || 1; // Fallback collapse value
+                this.state.distortion += inputData.collapse || 1;
                 Visuals.update(this.state.distortion);
                 if (this.state.isAudioReady) Audio.update(this.state.distortion);
                 this.transitionTo('loading_feedback');
@@ -215,31 +190,9 @@
                     }, 500);
                 });
             },
-             // *** NEW: Function to render the API key input prompt ***
-            renderApiKeyPrompt(onKeySaved) {
-                const html = `
-                    <div class="flex flex-col items-center gap-4">
-                        <h2 class="text-2xl font-bold text-red-500">نیاز به کلید API</h2>
-                        <p class="text-gray-400 max-w-md">برای ارتباط با هوش مصنوعی، لطفاً کلید Google AI API خود را وارد کنید. این کلید در مرورگر شما ذخیره خواهد شد.</p>
-                        <p class="text-gray-500 text-sm">می‌توانید کلید رایگان خود را از <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">Google AI Studio</a> دریافت کنید.</p>
-                        <input type="password" id="api-key-input" class="interactive-input" placeholder="کلید API را اینجا وارد کنید..." style="font-size: 1.2rem; direction: ltr;">
-                        <button id="save-api-key-btn" class="interactive-button mt-4">ذخیره و ادامه</button>
-                    </div>
-                `;
-                this._setContent(html).then(() => {
-                    const input = document.getElementById('api-key-input');
-                    const saveBtn = document.getElementById('save-api-key-btn');
-                    saveBtn.onclick = () => {
-                        const key = input.value.trim();
-                        if (key) {
-                            localStorage.setItem('gemini_api_key', key);
-                            onKeySaved(); // Signal to the engine that we can proceed
-                        } else {
-                            input.placeholder = "لطفاً یک کلید معتبر وارد کنید!";
-                        }
-                    };
-                });
-            },
+            
+            // *** REMOVED: API Key prompt is no longer needed. ***
+
             renderIntro() {
                  this._setContent(`
                     <h1 class="text-6xl font-black">خلسه</h1>
@@ -266,7 +219,6 @@
                         Visuals.drawRorschach();
                         hasTextInput = true;
                         break;
-                    // Consolidate text input stages
                     case 'memory_corruption':
                     case 'number_game':
                     case 'word_association':
@@ -275,12 +227,14 @@
                         break;
                     default:
                          html = `<p class="text-2xl text-red-500">خطای مرحله. در حال بارگذاری مجدد...</p>`;
-                         console.error("Unknown stage type received:", type);
+                         console.error("Unknown stage type received:", type, data);
                 }
                 
                 if (hasTextInput) {
+                    // Make sure data.prompt exists before trying to display it
+                    const promptText = data.prompt || "لطفاً پاسخ دهید...";
                     html = `<div data-stage-type="${type}">
-                                <p class="text-2xl md:text-3xl mb-8">${data.prompt}</p>
+                                <p class="text-2xl md:text-3xl mb-8">${promptText}</p>
                                 <div class="flex flex-col items-center gap-4">
                                     <input type="text" class="interactive-input" id="text-input" autocomplete="off" placeholder="پاسخ تو...">
                                     <div class="flex items-center gap-4 mt-4">
@@ -366,14 +320,8 @@
             },
 
             listen() {
-                if (!this.isSupported || this.permissionState !== 'granted') {
-                    UI.renderError("دسترسی به میکروفون داده نشده است.");
-                    return;
-                }
-
-                if (this.recognition && this.recognition.abort) {
-                    this.recognition.abort();
-                }
+                if (!this.isSupported || this.permissionState !== 'granted') return;
+                if (this.recognition && this.recognition.abort) this.recognition.abort();
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 this.recognition = new SpeechRecognition();
@@ -385,42 +333,25 @@
                 const textInput = document.getElementById('text-input');
                 let final_transcript = '';
 
-                this.recognition.onstart = () => {
-                    micBtn.classList.add('is-listening');
-                    textInput.placeholder = 'در حال شنیدن...';
-                    textInput.value = '';
-                    final_transcript = '';
-                };
-
+                this.recognition.onstart = () => { micBtn.classList.add('is-listening'); textInput.placeholder = 'در حال شنیدن...'; };
                 this.recognition.onend = () => {
                     micBtn.classList.remove('is-listening');
                     if (final_transcript.trim()) {
                         const stageTypeElement = document.querySelector('[data-stage-type]');
                         const stageType = stageTypeElement ? stageTypeElement.dataset.stageType : 'voice_input';
                         Engine.processUserInput({ type: stageType, choice: final_transcript });
-                    } else {
-                        textInput.placeholder = 'پاسخ تو...';
-                    }
+                    } else { textInput.placeholder = 'پاسخ تو...'; }
                 };
-                
-                this.recognition.onerror = (event) => {
-                    console.error('Voice recognition error:', event.error);
-                    textInput.placeholder = `خطا: ${event.error}`;
-                };
-                
+                this.recognition.onerror = (event) => { console.error('Voice recognition error:', event.error); textInput.placeholder = `خطا: ${event.error}`; };
                 this.recognition.onresult = (event) => {
                     let interim_transcript = '';
                     final_transcript = '';
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            final_transcript += event.results[i][0].transcript;
-                        } else {
-                            interim_transcript += event.results[i][0].transcript;
-                        }
+                        if (event.results[i].isFinal) final_transcript += event.results[i][0].transcript;
+                        else interim_transcript += event.results[i][0].transcript;
                     }
                     textInput.value = final_transcript || interim_transcript;
                 };
-
                 try { this.recognition.start(); } catch(e) { console.error("Recognition already started."); }
             }
         };
@@ -436,36 +367,38 @@
                  clearTimeout(id);
                  return response;
             },
-            async _query(prompt) {
-                // *** MODIFIED: Get API key from local storage ***
-                const apiKey = localStorage.getItem('gemini_api_key');
-                if (!apiKey) {
-                    throw new Error("API key not found. Please refresh and enter your key.");
-                }
+            
+            // *** MODIFIED: Added automatic retry logic and hardcoded API key ***
+            async _query(prompt, retries = 3, backoff = 1000) {
+                const apiKey = 'AIzaSyA8xlV8Nviwdt-xc9r5NeKsBMTRW5Wv724'; // <-- کلید شما اینجا قرار گرفته
 
                 const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 
-                const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) {
-                    // *** NEW: Better error handling for bad keys ***
-                     if (response.status === 400) {
-                        throw new Error(`API Error: ${response.status}. API key not valid. Please pass a valid API key.`);
+                try {
+                    const response = await this._fetchWithTimeout(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                    
+                    const result = await response.json();
+                    if (result.candidates?.[0]?.content?.parts?.[0]) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
+                        catch (e) { console.error("Invalid JSON from AI:", text); throw new Error("Invalid JSON from entity."); }
+                    } else if (result.error) {
+                        console.error("API Error Response:", result.error.message);
+                        throw new Error(result.error.message);
                     }
-                    throw new Error(`API Error: ${response.status}`);
+                    else { throw new Error("Unexpected response structure."); }
+                } catch (error) {
+                    console.error(`Attempt failed: ${error.message}. Retries left: ${retries}`);
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, backoff));
+                        return this._query(prompt, retries - 1, backoff * 2); // Retry with increased backoff
+                    } else {
+                        throw error; // If all retries fail, throw the error to be handled by the engine
+                    }
                 }
-                
-                const result = await response.json();
-                if (result.candidates?.[0]?.content?.parts?.[0]) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
-                    catch (e) { console.error("Invalid JSON from AI:", text); throw new Error("Invalid JSON from entity."); }
-                } else if (result.error) {
-                    console.error("API Error Response:", result.error.message);
-                    throw new Error(result.error.message);
-                }
-                else { throw new Error("Unexpected response structure."); }
             },
             async generateStage(type, profile) {
                 let prompt;
